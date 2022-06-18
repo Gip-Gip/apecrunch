@@ -14,18 +14,3 @@
 // You should have received a copy of the GNU General Public License along with
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>. 
-
-mod tui;
-mod parser;
-mod number;
-mod op_engine;
-
-use crate::tui::*;
-// Placeholder main function
-fn main() {
-    let mut tui = Tui::new();
-
-    tui.apply_theme_toml("etc/theme.toml");
-
-    tui.run();
-}
