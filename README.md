@@ -12,3 +12,4 @@
  - [ ] Add parentheses
  - [ ] Alter the Number struct to be a true fractional number instead of an i64
  - [ ] Make the theme less ugly
+ - [ ] Store theme in ~/.config/apecrunch/theme.toml
