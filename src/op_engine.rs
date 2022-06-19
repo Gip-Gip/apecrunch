@@ -111,6 +111,22 @@ pub fn simplify(tokens: &Token) -> Token
             return Token::Subtract(Box::new(left_result), Box::new(right_result));
         }
 
+        Token::Exponent(left, right) =>
+        {
+            let left_result = simplify(left);
+            let right_result = simplify(right);
+
+            if let Token::Number(left_number) = &left_result
+            {
+                if let Token::Number(right_number) = &right_result
+                {
+                    return Token::Number(left_number.exponent(&right_number));
+                }
+            }
+            
+            return Token::Exponent(Box::new(left_result), Box::new(right_result));
+        }
+
         Token::Equality(left, right) =>
         {
             let left_result = simplify(left);

@@ -24,6 +24,7 @@ use simple_error::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token
 {
+    Exponent(Box<Token>, Box<Token>), // "^"
     Multiply(Box<Token>, Box<Token>), // "*"
     Divide(Box<Token>, Box<Token>), // "/"
     Add(Box<Token>, Box<Token>), // "+"
@@ -39,6 +40,10 @@ impl Token
     {
         match self
         {
+            Token::Exponent(left, right) =>
+            {
+                return format!("{}^{}", left.to_string(), right.to_string());
+            }
             Token::Multiply(left, right) =>
             {
                 return format!("{} * {}", left.to_string(), right.to_string());
@@ -71,7 +76,7 @@ impl Token
     }
 }
 
-const ORDER_OF_OPS : [char; 5] = ['=', '-', '+', '/', '*']; // Order of operations, reversed
+const ORDER_OF_OPS : [char; 6] = ['=', '-', '+', '/', '*', '^']; // Order of operations, reversed
 
 // parser::parse_str - parse a string into tokens
 //
@@ -119,6 +124,14 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>>
             // Parse the left and right sides recursively...
             return match opcode
             {
+                '^' =>
+                {
+                    Ok(Token::Exponent
+                    (
+                        Box::new(parse(&left)?),
+                        Box::new(parse(&right)?)
+                    ))
+                }
                 '-' =>
                 {
                     Ok(Token::Subtract
