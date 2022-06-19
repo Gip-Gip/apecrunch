@@ -8,7 +8,9 @@
  - [ ] Add the ability to retrieve previous calculations from the history cache
  - [ ] Add the ability to save calculation history in multiple sessions
  - [ ] Add variables
- - [ ] Add exponents
+ - [ ] Add good exponents
+ - [ ] Add good roots
+ - [ ] Add dedicated square root function
  - [ ] Add parentheses
  - [ ] Add summaries to the top of source files
  - [ ] Add the ability to adjust the number of decimal places displayed
@@ -22,3 +24,4 @@
 ### **Version 0.0.1 *in progress***
 
  - [x] **Added fractional numbers** *(commit eba06ee)*
+ - [x] **Added exponents** *(commit c84bc01)*
