@@ -15,56 +15,58 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>. 
 
+use std::str::FromStr;
+use fraction::BigFraction;
 use std::error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 // Placeholder number struct, will be converted to a fractional number later...
 pub struct Number
 {
-    value: i64
+    fraction: BigFraction,
 }
 
 impl Number
-{   
-    pub fn from_str(s: &str) -> Result<Self, Box<dyn Error>>
+{
+    pub fn from_str(string: &str) -> Result<Self, Box<dyn Error>>
     {
-        let value = s.parse::<i64>()?;
+        let fraction = BigFraction::from_str(string)?;
         
         return Ok(Number{
-            value: value
+            fraction: fraction
         });
     }
 
     pub fn to_string(&self) -> String
     {
-        return self.value.to_string();
+        return format!("{:.3}", self.fraction);
     }
 
     pub fn add(&self, other: &Number) -> Number
     {
         return Number{
-            value: self.value + other.value
+            fraction: &self.fraction + &other.fraction
         };
     }
 
     pub fn subtract(&self, other: &Number) -> Number
     {
         return Number{
-            value: self.value - other.value
+            fraction: &self.fraction - &other.fraction
         };
     }
 
     pub fn multiply(&self, other: &Number) -> Number
     {
         return Number{
-            value: self.value * other.value
+            fraction: &self.fraction * &other.fraction
         };
     }
 
     pub fn divide(&self, other: &Number) -> Number
     {
         return Number{
-            value: self.value / other.value
+            fraction: &self.fraction / &other.fraction
         };
     }
 }
