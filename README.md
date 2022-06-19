@@ -11,12 +11,14 @@
  - [ ] Add exponents
  - [ ] Add parentheses
  - [ ] Add summaries to the top of source files
- - [ ] Alter the Number struct to be a true fractional number instead of an i64
+ - [ ] Add the ability to adjust the number of decimal places displayed
  - [ ] Make the theme less ugly
+ - [ ] Make test cases
  - [ ] Store theme in ~/.config/apecrunch/theme.toml
+ - [ ] Store the parsed tokens of calculations in history instead of the printed result
 
 ## **Changelog:**
 
 ### **Version 0.0.1 *in progress***
 
- - [x] Added fractional numbers
+ - [x] **Added fractional numbers** *(commit eba06ee)*
