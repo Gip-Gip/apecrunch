@@ -230,7 +230,7 @@ impl Tui
         
         layout.set_focus_index(layout.len() - 1).unwrap();
 
-        cursive.add_layer(layout);
+        cursive.add_fullscreen_layer(layout);
     }
 
     // tui::Tui::entry_bar_on_edit - called each time the entry bar is edited
