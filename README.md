@@ -26,5 +26,5 @@
  - [x] **Added fractional numbers** *(commit eba06ee)*
  - [x] **Added exponents** *(commit c84bc01)*
  - [x] **Added support for negative numbers** *(commit 1ec049a)*
- - [ ] **Added ability to scroll through history** *(commit 6aede0c)*
- - [ ] **Deuglified layout code** *(commit 6aede0c)*
+ - [x] **Added ability to scroll through history** *(commit 6aede0c)*
+ - [x] **Deuglified layout code** *(commit 6aede0c)*
