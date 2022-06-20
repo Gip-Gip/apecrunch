@@ -91,6 +91,11 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>>
 {
     let cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();
 
+    if cleaned_string.len() == 0
+    {
+        bail!("Empty Expression!");
+    }
+
     return Ok(parse(&cleaned_string)?);
 }
 
