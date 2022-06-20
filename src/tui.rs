@@ -15,28 +15,32 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>. 
 
+use cursive::views::LinearLayout;
+
+
+
 use cursive::views::Dialog;
 use cursive::views::SelectView;
 use cursive::views::ScrollView;
-use cursive::XY;
+
 use cursive::CursiveExt;
 use cursive::Cursive;
-use cursive::views::LayerPosition;
+
 use cursive::theme::*;
 use cursive::views::EditView;
 use cursive::view::Resizable;
+
 use cursive::event::Event;
+
 use cursive::align::HAlign;
 use cursive::align::VAlign;
 use crate::parser;
 use crate::op_engine;
-use std::cmp;
+
 
 // Constants!
 
 const TUI_ENTRYBAR_HEIGHT: usize = 1;
-const TUI_HISTORY_HEIGHT_SUB: usize = TUI_ENTRYBAR_HEIGHT;
-
 
 pub struct Tui
 {
@@ -60,10 +64,9 @@ impl Tui
 
         let cache = TuiCache
         {
-            initialized: false,
-            mark_for_layout: false,
+            mark_for_layout: true,
             entry_bar_cache: String::new(),
-            history_cache: Vec::<String>::new()
+            history_cache: Vec::<String>::new(),
         };
 
         tui.cursive.set_user_data(cache);
@@ -103,10 +106,9 @@ impl Tui
             }
         };
 
-        if cache.initialized == false && cursive.is_running() || cache.mark_for_layout == true
+        if cache.mark_for_layout == true && cursive.is_running()
         {
             Self::layout(cursive);
-            cache.initialized = true;
             cache.mark_for_layout = false;
         }
 
@@ -160,6 +162,7 @@ impl Tui
         // Prime the runtime loop
         self.cursive.set_on_pre_event(Event::Refresh, |cursive| Self::running(cursive));
 
+
         self.cursive.set_autorefresh(true); // Enable the refresh trigger
     }
 
@@ -182,18 +185,8 @@ impl Tui
             }
         };
 
-        let screen_size = cursive.screen_size();
-
-        // let width = screen_size.x; // May be needed eventually but idk when
-        let height = screen_size.y;
-
-
-
         // History view configuration!
         //
-
-        // Calculate the height of the history view, the minimum size being 1
-        let history_height = cmp::max(height - TUI_HISTORY_HEIGHT_SUB, 1);
 
         let mut history_list = SelectView::new()
             .h_align(HAlign::Left)
@@ -204,11 +197,11 @@ impl Tui
             history_list.add_item(entry, i);
         }
         
-        let history = ScrollView::new(
-            history_list
-                .full_width()
-                .fixed_height(history_height)
-            );
+        let mut history_scroll = ScrollView::new(history_list);
+
+        history_scroll.scroll_to_important_area();
+
+        let history = history_scroll.full_width().full_height();
         
         // Entry bar view configuration!
         //
@@ -224,17 +217,20 @@ impl Tui
             .on_edit(|cursive, text, cursor| Self::entry_bar_on_edit(cursive, text, cursor))
             .on_submit(|cursive, text| Self::entry_bar_on_submit(cursive, text))
             .full_width()
-            .fixed_height(1);
+            .fixed_height(TUI_ENTRYBAR_HEIGHT);
         
         
         
         // Clear cursive and add all the views + reposition them all
-        cursive.clear();
-        cursive.add_layer(history);
-        cursive.reposition_layer(LayerPosition::FromFront(0), XY::new(cursive::view::Offset::Absolute(0), cursive::view::Offset::Absolute(0))); // Ugly!
 
-        cursive.add_layer(entry_bar);
-        cursive.reposition_layer(LayerPosition::FromFront(0), XY::new(cursive::view::Offset::Absolute(0), cursive::view::Offset::Absolute(height - 1)));
+        cursive.clear();
+        let mut layout = LinearLayout::vertical()
+            .child(history)
+            .child(entry_bar);
+        
+        layout.set_focus_index(layout.len() - 1).unwrap();
+
+        cursive.add_layer(layout);
     }
 
     // tui::Tui::entry_bar_on_edit - called each time the entry bar is edited
@@ -327,9 +323,8 @@ impl Tui
 #[derive(Debug, Clone)]
 struct TuiCache
 {
-    pub initialized: bool,
     pub mark_for_layout: bool,
     pub entry_bar_cache: String,
-    pub history_cache: Vec<String>
+    pub history_cache: Vec<String>,
 }
 
