@@ -30,3 +30,4 @@
  - [x] **Added ability to scroll through history** *(commit 6aede0c)*
  - [x] **Deuglified layout code** *(commit 6aede0c)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
+ - [x] **Made view fullscreen** *(commit 62313aa)*
