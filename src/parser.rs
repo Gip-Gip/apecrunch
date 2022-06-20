@@ -15,9 +15,11 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>. 
 
+use regex::Regex;
 use std::error::Error;
 use crate::number::Number;
 use simple_error::*;
+use lazy_static::*;
 
 // parser::Token - enum for tokens
 //
@@ -102,14 +104,30 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>>
 //  **THIS FUNCTION ONLY ACCEPTS WHITESPACE FREE STRINGS**
 fn parse(string: &str) -> Result<Token, Box<dyn Error>>
 {
+    // Regex definitions for various parsing uses
+    lazy_static!
+    {
+        static ref NEGATIVE_RE: Regex = Regex::new(r"[=\-\+/\*\^]-").unwrap(); // Used to see if there are negative numbers in the string
+    }
+
+    let mut working_string = string.clone(); // Used to check for operands in the string, also is mutable so we can just remove negative signs and etc if necissary
     // First see if the string contains an operator...
     for opcode in ORDER_OF_OPS
     {
         // If so...
-        if string.contains(opcode)
+        if working_string.contains(opcode)
         {
             // Split the string at the operator...
-            let splitpoint = string.find(opcode).unwrap();
+            let mut splitpoint = working_string.find(opcode).unwrap();
+
+            // If the operator is actually a negative sign...
+            if opcode == '-' && (splitpoint == 0 || NEGATIVE_RE.is_match(working_string))
+            {
+                working_string = &working_string[1..];
+                continue;
+            }
+
+            splitpoint += string.len() - working_string.len(); // Make up for any removed characters from the working string
 
             // If there is nothing to the left or right of the operator, produce an error...
             if splitpoint + 1 == string.len() || splitpoint == 0
@@ -185,7 +203,7 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>>
     //
 
     // If the string is a number...
-    if string.chars().next().unwrap().is_numeric()
+    if working_string.chars().next().unwrap().is_numeric()
     {
         return Ok(Token::Number(Number::from_str(string)?));
     }
