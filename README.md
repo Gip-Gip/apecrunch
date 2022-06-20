@@ -14,6 +14,7 @@
  - [ ] Add parentheses
  - [ ] Add summaries to the top of source files
  - [ ] Add the ability to adjust the number of decimal places displayed
+ - [ ] Allow the user to quit the program without hitting ctrl+c
  - [ ] Make the theme less ugly
  - [ ] Make test cases
  - [ ] Store theme in ~/.config/apecrunch/theme.toml
@@ -28,3 +29,4 @@
  - [x] **Added support for negative numbers** *(commit 1ec049a)*
  - [x] **Added ability to scroll through history** *(commit 6aede0c)*
  - [x] **Deuglified layout code** *(commit 6aede0c)*
+ - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
