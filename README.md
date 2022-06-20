@@ -25,3 +25,4 @@
 
  - [x] **Added fractional numbers** *(commit eba06ee)*
  - [x] **Added exponents** *(commit c84bc01)*
+ - [x] **Added support for negative numbers** *(commit 1ec049a)*
