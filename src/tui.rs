@@ -15,6 +15,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>. 
 
+use crate::parser::Token;
 use cursive::views::LinearLayout;
 
 
@@ -66,7 +67,8 @@ impl Tui
         {
             mark_for_layout: true,
             entry_bar_cache: String::new(),
-            history_cache: Vec::<String>::new(),
+            entry_bar_cursor_pos: 0,
+            history_cache: Vec::<HistoryCacheEntry>::new(),
         };
 
         tui.cursive.set_user_data(cache);
@@ -189,12 +191,13 @@ impl Tui
         //
 
         let mut history_list = SelectView::new()
+            .on_submit(|cursive, index | Self::history_on_select(cursive, *index))
             .h_align(HAlign::Left)
             .v_align(VAlign::Top);
         
         for (i, entry) in cache.history_cache.iter().enumerate()
         {
-            history_list.add_item(entry, i);
+            history_list.add_item(&entry.rendition, i);
         }
         
         let mut history_scroll = ScrollView::new(history_list);
@@ -211,13 +214,16 @@ impl Tui
 
         let entry_bar_style = ColorStyle::new(entry_bar_bg, entry_bar_fg);
 
-        let entry_bar = EditView::new()
+        let mut entry_bar = EditView::new()
             .style(entry_bar_style)
             .content(cache.entry_bar_cache)
             .on_edit(|cursive, text, cursor| Self::entry_bar_on_edit(cursive, text, cursor))
-            .on_submit(|cursive, text| Self::entry_bar_on_submit(cursive, text))
-            .full_width()
-            .fixed_height(TUI_ENTRYBAR_HEIGHT);
+            .on_submit(|cursive, text| Self::entry_bar_on_submit(cursive, text));
+        
+        entry_bar.set_cursor(cache.entry_bar_cursor_pos);
+
+        let entry_bar = entry_bar.full_width().fixed_height(TUI_ENTRYBAR_HEIGHT);
+
         
         
         
@@ -243,7 +249,7 @@ impl Tui
     // DESCRIPTION:
     //  A simple function that is called each time anything is typed or edited in the entry bar. Simply
     //  modifies the Tui cache to reflect the current entry bar data
-    fn entry_bar_on_edit(cursive: &mut Cursive, text: &str, _cursor_pos: usize)
+    fn entry_bar_on_edit(cursive: &mut Cursive, text: &str, cursor_pos: usize)
     {
         // Grab the cache
         let mut cache = match cursive.user_data::<TuiCache>()
@@ -259,6 +265,7 @@ impl Tui
         };
 
         cache.entry_bar_cache = text.to_string();
+        cache.entry_bar_cursor_pos = cursor_pos;
 
         cursive.set_user_data(cache); // Store the cache back with the updated entry_bar_cache
     }
@@ -311,10 +318,52 @@ impl Tui
         // Go through the tokens an operate on them, getting an equality
         let result = op_engine::get_equality(&tokens);
 
-        cache.history_cache.push(result.to_string());
+        cache.history_cache.push(HistoryCacheEntry::new(result));
         cache.entry_bar_cache = String::new();
+        cache.entry_bar_cursor_pos = 0;
 
         cursive.set_user_data(cache); // Store the cache back with the updated history + entry bar cache
+
+        Self::layout(cursive); // Update the layout
+    }
+
+    // tui::Tui::history_on_select - called each time a history entry is selected
+    //
+    // ARGUMENTS:
+    //  cursive: &mut Cursive - the cursive instance
+    //  index: usize - the index of the selected history entry
+    //
+    // DESCRIPTION:
+    //  Called each time an entry in the history list is selected. Takes the selected history entry and
+    //  inserts it in the cursor's position in the entry bar.
+    fn history_on_select(cursive: &mut Cursive, index: usize)
+    {
+        // Grab the cache
+        let mut cache = match cursive.user_data::<TuiCache>()
+        {
+            Some(cache) =>
+            {
+                cache.clone()
+            }
+            None =>
+            {
+                panic!("Failed to initialize Cursive instance with cache! this should not happen!");
+            }
+        };
+
+        // Get the selected history entry
+        let entry = &cache.history_cache[index].render_without_equality();
+
+        // Insert the selected history entry into the entry bar at the cursor position
+        let left = &cache.entry_bar_cache[..cache.entry_bar_cursor_pos];
+        let right = &cache.entry_bar_cache[cache.entry_bar_cursor_pos..];
+
+        cache.entry_bar_cache = format!("{}{}{}", left, entry, right);
+
+        // Update the cursor position
+        cache.entry_bar_cursor_pos += entry.len();
+
+        cursive.set_user_data(cache); // Store the cache back with the updated entry_bar_cache
 
         Self::layout(cursive); // Update the layout
     }
@@ -325,6 +374,37 @@ struct TuiCache
 {
     pub mark_for_layout: bool,
     pub entry_bar_cache: String,
-    pub history_cache: Vec<String>,
+    pub entry_bar_cursor_pos: usize,
+    pub history_cache: Vec<HistoryCacheEntry>,
 }
 
+#[derive(Debug, Clone)]
+struct HistoryCacheEntry
+{
+    pub expression: Token,
+    pub rendition: String,
+}
+
+impl HistoryCacheEntry
+{
+    pub fn new(expression: Token) -> Self
+    {
+        let rendition = expression.to_string();
+
+        return Self
+        {
+            expression: expression,
+            rendition: rendition,
+        };
+    }
+
+    pub fn render_without_equality(&self) -> String
+    {
+        if let Token::Equality(left, _right) = &self.expression
+        {
+            return format!("{}", left.to_string());
+        }
+
+        return self.rendition.clone();
+    }
+}
