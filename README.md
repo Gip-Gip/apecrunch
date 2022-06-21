@@ -16,7 +16,7 @@
  - [ ] Allow the user to quit the program without hitting ctrl+c
  - [ ] Make the theme less ugly
  - [ ] Make test cases
- - [ ] Properly format the source code
+ - [ ] Properly format comments
  - [ ] Store theme in ~/.config/apecrunch/theme.toml
  - [ ] Store the parsed tokens of calculations in history instead of the printed result
 
@@ -28,7 +28,8 @@
  - [x] **Added exponents** *(commit c84bc01)*
  - [x] **Added support for negative numbers** *(commit 1ec049a)*
  - [x] **Added ability to scroll through history** *(commit 6aede0c)*
- - [ ] **Added ability to select history entries** *(commit fa7ade5)*
+ - [x] **Added ability to select history entries** *(commit fa7ade5)*
  - [x] **Deuglified layout code** *(commit 6aede0c)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
  - [x] **Made view fullscreen** *(commit 62313aa)*
+ - [x] **Ran rustfmt on source code** *(commit 24b37cd)*
