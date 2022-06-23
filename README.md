@@ -14,11 +14,9 @@
  - [ ] Add the ability to adjust the number of decimal places displayed
  - [ ] Allow the user to quit the program without hitting ctrl+c
  - [ ] Make the theme less ugly
- - [ ] Make test cases
  - [ ] Properly format comments
  - [ ] Store theme in ~/.apecrunch/theme.toml
  - [ ] Store history files in ~/.apecrunch/history/
- - [ ] Store the parsed tokens of calculations in history instead of the printed result
 
 ## **Changelog:**
 
@@ -33,4 +31,5 @@
  - [x] **Deuglified layout code** *(commit 6aede0c)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
  - [x] **Made view fullscreen** *(commit 62313aa)*
+ - [x] **Made test cases** *(commit ca102c9)*
  - [x] **Ran rustfmt on source code** *(commit 24b37cd)*
