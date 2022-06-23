@@ -171,3 +171,105 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
     // At the moment nothing else is supported so we bail!
     bail!("Invalid Expression: {}", string);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TWO: &str = "2";
+    const TWOPTWO: &str = "2 + 2";
+    const TWOSTWO: &str = "2 - 2";
+    const TWOMTWO: &str = "2 * 2";
+    const TWODTWO: &str = "2 / 2";
+    const TWOETWO: &str = "2^2";
+    const TWOQTWO: &str = "2 = 2";
+
+    // Test to make sure the parser can recognize numbers
+    #[test]
+    fn test_parser_num() {
+        let tokenized_expression_ref = Token::Number(Number::from_str(TWO).unwrap());
+
+        let tokenized_expression_res = parse_str(TWO).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize add operations
+    #[test]
+    fn test_parser_add() {
+        let expression = TWOPTWO;
+
+        let tokenized_expression_ref = Token::Add(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize add operations
+    #[test]
+    fn test_parser_sub() {
+        let expression = TWOSTWO;
+
+        let tokenized_expression_ref = Token::Subtract(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize subtraction operations
+    #[test]
+    fn test_parser_mul() {
+        let expression = TWOMTWO;
+
+        let tokenized_expression_ref = Token::Multiply(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize division operations
+    #[test]
+    fn test_parser_div() {
+        let expression = TWODTWO;
+
+        let tokenized_expression_ref = Token::Divide(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize exponent operations
+    #[test]
+    fn test_parser_exp() {
+        let expression = TWOETWO;
+
+        let tokenized_expression_ref = Token::Exponent(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can recognize equality operations
+    #[test]
+    fn test_parser_eql() {
+        let expression = TWOQTWO;
+
+        let tokenized_expression_ref = Token::Equality(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+
+        let tokenized_expression_res = parse_str(expression).unwrap();
+
+        // Make sure the reference is equal to the result
+        assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+}

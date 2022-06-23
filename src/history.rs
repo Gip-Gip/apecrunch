@@ -29,7 +29,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HistoryJson {
     version: String,
     session_start: u64,
@@ -38,7 +38,7 @@ pub struct HistoryJson {
     entries: Vec<HistoryEntry>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HistoryEntry {
     entry_uuid: Uuid,
     expression: Token,
@@ -67,11 +67,11 @@ impl HistoryEntry {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HistoryManager {
-    file_name: String,
-    previous_entries: Vec<HistoryEntry>,
-    history_json: HistoryJson,
+    pub file_name: String,
+    pub previous_entries: Vec<HistoryEntry>,
+    pub history_json: HistoryJson,
 }
 
 impl HistoryManager {
@@ -85,21 +85,23 @@ impl HistoryManager {
         let mut previous_entries = Vec::<HistoryEntry>::new();
 
         for entry in fs::read_dir("etc/")? {
-            if let Some(file_name) = entry?.path().to_str() {
-                if HISTORY_FILE_RE.is_match(file_name) {
-                    let data = lz4_flex::block::decompress_size_prepended(&fs::read(file_name)?)?;
+            let path = entry?.path().as_path().to_owned();
 
-                    let history_json: HistoryJson = serde_json::from_slice(&data)?;
+            let file_name = path.to_str().unwrap_or("");
 
-                    previous_entries.extend_from_slice(&history_json.entries);
-                }
+            // Odd case where file entry would go through when file is freshly deleted, only encountered in testing
+            // Still, check to make sure the file exists before trying to load it...
+            if HISTORY_FILE_RE.is_match(&file_name) && path.exists() {
+                let history_json: HistoryJson = Self::json_from_file(&file_name)?;
+
+                previous_entries.extend_from_slice(&history_json.entries);
             }
         }
 
         let session_start = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
         let session_uuid = Uuid::new_v4();
 
-        let version = "0.0.1";
+        let version = crate::VERSION;
         let decimal_places = 12;
 
         let entries = Vec::<HistoryEntry>::new();
@@ -138,6 +140,12 @@ impl HistoryManager {
         self.history_json.entries.push(history_entry.clone());
     }
 
+    pub fn json_from_file(string: &str) -> Result<HistoryJson, Box<dyn Error>>{
+        let data = lz4_flex::block::decompress_size_prepended(&fs::read(string)?)?;
+
+        return Ok(serde_json::from_slice(&data)?);
+    }
+
     pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
         // Convert the history json struct into an lz4-compressed json stored in a vector
         let data = lz4_flex::block::compress_prepend_size(&serde_json::to_vec(&self.history_json)?);
@@ -158,5 +166,94 @@ impl HistoryManager {
     pub fn delete_file(&self) -> Result<(), Box<dyn Error>> {
         fs::remove_file(&self.file_name)?;
         return Ok(());
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser;
+
+    const TWOPTWO: &str = "2 + 2";
+
+    // Test the creation of a history manager
+    #[test]
+    fn test_new_history_manager() {
+        let history_manager = HistoryManager::new().unwrap();
+        
+        // File should not exist yet!
+        assert!(!Path::new(&history_manager.file_name).exists());
+
+        // There should be no previous entries!
+        assert_eq!(history_manager.previous_entries.len(), 0);
+
+        // There should also be no entries in the current json!
+        assert_eq!(history_manager.history_json.entries.len(), 0);
+    }
+
+    // Test adding entries to the entry manager
+    #[test]
+    fn test_add_entry_history_manager() {
+        let mut history_manager = HistoryManager::new().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO).unwrap();
+        
+        let history_entry = HistoryEntry::new(&expression);
+
+        history_manager.add_entry(&history_entry);
+
+        // File should still not exist!
+        assert!(!Path::new(&history_manager.file_name).exists());
+
+        // First entry should equal our expression!
+        assert_eq!(history_manager.get_entries()[0].to_string(), TWOPTWO);
+    }
+
+    // Test updating history files
+    #[test]
+    fn test_update_file_history_manager() {
+        let mut history_manager = HistoryManager::new().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO).unwrap();
+        
+        let history_entry = HistoryEntry::new(&expression);
+
+        history_manager.add_entry(&history_entry);
+
+        history_manager.update_file().unwrap();
+
+        // File should now exist!
+        assert!(Path::new(&history_manager.file_name).exists());
+
+        // Check to make sure the json was written to correctly
+        assert_eq!(history_manager.history_json, HistoryManager::json_from_file(history_manager.file_name.as_str()).unwrap());
+
+        // Clean up!
+        history_manager.delete_file().unwrap();
+    }
+
+    // Test retrieving history from history files
+    #[test]
+    fn test_retrive_history_files()
+    {
+        let mut history_manager1 = HistoryManager::new().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO).unwrap();
+        
+        let history_entry = HistoryEntry::new(&expression);
+
+        history_manager1.add_entry(&history_entry);
+
+        history_manager1.update_file().unwrap();
+
+        let history_manager2 = HistoryManager::new().unwrap();
+
+        // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
+        assert_eq!(history_manager2.previous_entries, history_manager1.history_json.entries);
+
+        // Clean up!
+        history_manager1.delete_file().unwrap();
     }
 }

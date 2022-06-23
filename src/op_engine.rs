@@ -120,3 +120,138 @@ pub fn simplify(tokens: &Token) -> Token {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser;
+
+    const TWO: &str = "2";
+    const TWOPTWO: &str = "2 + 2";
+    const TWOSTWO: &str = "2 - 2";
+    const TWOMTWO: &str = "2 * 2";
+    const TWODTWO: &str = "2 / 2";
+    const TWOETWO: &str = "2^2";
+    const TWOQTWO: &str = "2 = 2";
+
+    const TWOPTWO_R: &str = "4";
+    const TWOSTWO_R: &str = "0";
+    const TWOMTWO_R: &str = "4";
+    const TWODTWO_R: &str = "1";
+    const TWOETWO_R: &str = "4";
+    const TWOQTWO_R: &str = "true";
+
+
+
+    // Test basic single number expression operation
+    #[test]
+    fn test_op_engine_sneo() {
+        let tokenized_expression = parser::parse_str(TWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWO);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test addition
+    #[test]
+    fn test_op_engine_add() {
+        let tokenized_expression = parser::parse_str(TWOPTWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWOPTWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test subtraction
+    #[test]
+    fn test_op_engine_sub() {
+        let tokenized_expression = parser::parse_str(TWOSTWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWOSTWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test multiplication
+    #[test]
+    fn test_op_engine_mul() {
+        let tokenized_expression = parser::parse_str(TWOMTWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWOMTWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test division
+    #[test]
+    fn test_op_engine_div() {
+        let tokenized_expression = parser::parse_str(TWODTWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWODTWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test exponentation
+    #[test]
+    fn test_op_engine_exp() {
+        let tokenized_expression = parser::parse_str(TWOETWO).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWOETWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test equality
+    #[test]
+    fn test_op_engine_eql() {
+        let tokenized_expression = parser::parse_str(TWOQTWO).unwrap();
+
+        if let Token::Boolean(num) = simplify(&tokenized_expression) {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(), TWOQTWO_R);
+        }
+
+        else
+        {
+            panic!("Didn't return number token!");
+        }
+    }
+}

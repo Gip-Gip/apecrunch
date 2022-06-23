@@ -22,6 +22,9 @@ mod parser;
 mod tui;
 
 use crate::tui::*;
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 // Placeholder main function
 fn main() {
     let mut tui = Tui::new().unwrap();
