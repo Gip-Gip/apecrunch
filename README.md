@@ -5,7 +5,6 @@
 **ApeCrunch** aims to be a fast, user-friendly Rust/TUI calculator port of the popular [SpeedCrunch](https://speedcrunch.org/) project. While not a copy-paste port, there are plans to implement every function SpeedCrunch supports plus the addition of much more
 
 ## **TO-DO:**
- - [ ] Add the ability to save calculation history in multiple sessions
  - [ ] Add variables
  - [ ] Add good exponents
  - [ ] Add good roots
@@ -17,7 +16,8 @@
  - [ ] Make the theme less ugly
  - [ ] Make test cases
  - [ ] Properly format comments
- - [ ] Store theme in ~/.config/apecrunch/theme.toml
+ - [ ] Store theme in ~/.apecrunch/theme.toml
+ - [ ] Store history files in ~/.apecrunch/history/
  - [ ] Store the parsed tokens of calculations in history instead of the printed result
 
 ## **Changelog:**
@@ -29,6 +29,7 @@
  - [x] **Added support for negative numbers** *(commit 1ec049a)*
  - [x] **Added ability to scroll through history** *(commit 6aede0c)*
  - [x] **Added ability to select history entries** *(commit fa7ade5)*
+ - [x] **Added automatic saving of calculations across multiple sessions** *(commit 3abc2cc)*
  - [x] **Deuglified layout code** *(commit 6aede0c)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
  - [x] **Made view fullscreen** *(commit 62313aa)*
