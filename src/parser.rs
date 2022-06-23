@@ -18,12 +18,14 @@
 use crate::number::Number;
 use lazy_static::*;
 use regex::Regex;
+use serde::Deserialize;
+use serde::Serialize;
 use simple_error::*;
 use std::error::Error;
 
 // parser::Token - enum for tokens
 //
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Token {
     Exponent(Box<Token>, Box<Token>), // "^"
     Multiply(Box<Token>, Box<Token>), // "*"

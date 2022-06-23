@@ -15,6 +15,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+mod history;
 mod number;
 mod op_engine;
 mod parser;
@@ -23,7 +24,7 @@ mod tui;
 use crate::tui::*;
 // Placeholder main function
 fn main() {
-    let mut tui = Tui::new();
+    let mut tui = Tui::new().unwrap();
 
     tui.apply_theme_toml("etc/theme.toml");
 

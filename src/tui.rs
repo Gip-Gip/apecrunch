@@ -15,8 +15,10 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::parser::Token;
+use crate::history::HistoryEntry;
+use crate::history::HistoryManager;
 use cursive::views::LinearLayout;
+use std::error::Error;
 
 use cursive::views::Dialog;
 use cursive::views::ScrollView;
@@ -49,7 +51,7 @@ impl Tui {
     //
     // DESCRIPTION:
     //  This constructor creates a new Cursive instance, initializes the Tui cache, and primes all event reactors.
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         let cursive = Cursive::new();
 
         let mut tui = Self { cursive: cursive };
@@ -58,14 +60,14 @@ impl Tui {
             mark_for_layout: true,
             entry_bar_cache: String::new(),
             entry_bar_cursor_pos: 0,
-            history_cache: Vec::<HistoryCacheEntry>::new(),
+            history_manager: HistoryManager::new()?,
         };
 
         tui.cursive.set_user_data(cache);
 
         tui.prime();
 
-        return tui;
+        return Ok(tui);
     }
 
     // tui::Tui::run() - runs the Tui instance
@@ -169,8 +171,8 @@ impl Tui {
             .h_align(HAlign::Left)
             .v_align(VAlign::Top);
 
-        for (i, entry) in cache.history_cache.iter().enumerate() {
-            history_list.add_item(&entry.rendition, i);
+        for (i, entry) in cache.history_manager.get_entries().iter().enumerate() {
+            history_list.add_item(&entry.to_string(), i);
         }
 
         let mut history_scroll = ScrollView::new(history_list);
@@ -256,15 +258,8 @@ impl Tui {
         // parse the text in the entry box
         let tokens = match parser::parse_str(text) {
             Ok(tokens) => tokens,
-            Err(err) => {
-                let error_dialog =
-                    Dialog::text(format!("{}", err))
-                        .title("Error!")
-                        .button("Ok", |cursive| {
-                            cursive.pop_layer().unwrap();
-                        });
-
-                cursive.add_layer(error_dialog);
+            Err(error) => {
+                Self::nonfatal_error_dialog(cursive, error);
                 return;
             }
         };
@@ -272,7 +267,13 @@ impl Tui {
         // Go through the tokens an operate on them, getting an equality
         let result = op_engine::get_equality(&tokens);
 
-        cache.history_cache.push(HistoryCacheEntry::new(result));
+        cache.history_manager.add_entry(&HistoryEntry::new(&result));
+
+        if let Result::Err(error) = cache.history_manager.update_file() {
+            Self::nonfatal_error_dialog(cursive, error);
+            return;
+        }
+
         cache.entry_bar_cache = String::new();
         cache.entry_bar_cursor_pos = 0;
 
@@ -300,7 +301,7 @@ impl Tui {
         };
 
         // Get the selected history entry
-        let entry = &cache.history_cache[index].render_without_equality();
+        let entry = &cache.history_manager.get_entries()[index].render_without_equality();
 
         // Insert the selected history entry into the entry bar at the cursor position
         let left = &cache.entry_bar_cache[..cache.entry_bar_cursor_pos];
@@ -315,6 +316,18 @@ impl Tui {
 
         Self::layout(cursive); // Update the layout
     }
+
+    pub fn nonfatal_error_dialog(cursive: &mut Cursive, error: Box<dyn Error>) {
+        let error_dialog =
+            Dialog::text(format!("{}", error))
+                .title("Error!")
+                .button("Ok", |cursive| {
+                    cursive.pop_layer().unwrap();
+                });
+
+        cursive.add_layer(error_dialog);
+        return;
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -322,30 +335,5 @@ struct TuiCache {
     pub mark_for_layout: bool,
     pub entry_bar_cache: String,
     pub entry_bar_cursor_pos: usize,
-    pub history_cache: Vec<HistoryCacheEntry>,
-}
-
-#[derive(Debug, Clone)]
-struct HistoryCacheEntry {
-    pub expression: Token,
-    pub rendition: String,
-}
-
-impl HistoryCacheEntry {
-    pub fn new(expression: Token) -> Self {
-        let rendition = expression.to_string();
-
-        return Self {
-            expression: expression,
-            rendition: rendition,
-        };
-    }
-
-    pub fn render_without_equality(&self) -> String {
-        if let Token::Equality(left, _right) = &self.expression {
-            return format!("{}", left.to_string());
-        }
-
-        return self.rendition.clone();
-    }
+    pub history_manager: HistoryManager,
 }

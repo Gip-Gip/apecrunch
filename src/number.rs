@@ -18,10 +18,12 @@
 use fraction::BigFraction;
 use fraction::BigUint;
 use fraction::One;
+use serde::Deserialize;
+use serde::Serialize;
 use std::error::Error;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 // Placeholder number struct, will be converted to a fractional number later...
 pub struct Number {
     fraction: BigFraction,
