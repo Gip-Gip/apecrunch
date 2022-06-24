@@ -15,6 +15,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::Session;
 use crate::history::HistoryEntry;
 use crate::history::HistoryManager;
 use cursive::view::Nameable;
@@ -60,14 +61,17 @@ impl Tui {
     //
     // DESCRIPTION:
     //  This constructor creates a new Cursive instance, initializes the Tui cache, and primes all event reactors.
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: Session) -> Result<Self, Box<dyn Error>> {
         let cursive = Cursive::new();
 
         let mut tui = Self { cursive: cursive };
 
+        tui.apply_theme_toml(session.get_theme_file_path().to_str().unwrap());
+
         let cache = TuiCache {
             entry_bar_cursor_pos: 0,
-            history_manager: HistoryManager::new()?,
+            history_manager: HistoryManager::new(&session)?,
+            session: session,
         };
 
         tui.cursive.set_user_data(cache);
@@ -116,7 +120,7 @@ impl Tui {
     // DESCRIPTION:
     //  Grabs the (possibly new) width and height of the TUI and clears+lays out all of the views needed, preserving the content of all the views as well
     fn layout(&mut self) {
-        // Retrieve the cache
+        // Grab the cache
         let cache = match self.cursive.user_data::<TuiCache>() {
             Some(cache) => cache.clone(),
             None => {
@@ -150,12 +154,10 @@ impl Tui {
 
         let entry_bar_style = ColorStyle::new(entry_bar_bg, entry_bar_fg);
 
-        let mut entry_bar = EditView::new()
+        let entry_bar = EditView::new()
             .style(entry_bar_style)
             .on_edit(|cursive, text, cursor| Self::entry_bar_on_edit(cursive, text, cursor))
             .on_submit(|cursive, text| Self::entry_bar_on_submit(cursive, text));
-
-        entry_bar.set_cursor(cache.entry_bar_cursor_pos);
 
         let entry_bar = entry_bar
             .with_name(TUI_ENTRYBAR_ID)
@@ -313,4 +315,5 @@ impl Tui {
 struct TuiCache {
     pub entry_bar_cursor_pos: usize,
     pub history_manager: HistoryManager,
+    pub session: Session,
 }

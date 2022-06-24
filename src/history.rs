@@ -15,6 +15,8 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use std::path::PathBuf;
+use crate::Session;
 use crate::parser::Token;
 use lazy_static::*;
 use regex::Regex;
@@ -69,13 +71,13 @@ impl HistoryEntry {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HistoryManager {
-    pub file_name: String,
+    pub file_path: PathBuf,
     pub previous_entries: Vec<HistoryEntry>,
     pub history_json: HistoryJson,
 }
 
 impl HistoryManager {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: &Session) -> Result<Self, Box<dyn Error>> {
         // Regex definitions for correctly identifying files
         lazy_static! {
             static ref HISTORY_FILE_RE: Regex =
@@ -84,7 +86,7 @@ impl HistoryManager {
 
         let mut previous_entries = Vec::<HistoryEntry>::new();
 
-        for entry in fs::read_dir("etc/")? {
+        for entry in fs::read_dir(&session.data_dir)? {
             let path = entry?.path().as_path().to_owned();
 
             let file_name = path.to_str().unwrap_or("");
@@ -92,7 +94,7 @@ impl HistoryManager {
             // Odd case where file entry would go through when file is freshly deleted, only encountered in testing
             // Still, check to make sure the file exists before trying to load it...
             if HISTORY_FILE_RE.is_match(&file_name) && path.exists() {
-                let history_json: HistoryJson = Self::json_from_file(&file_name)?;
+                let history_json: HistoryJson = Self::json_from_file(path)?;
 
                 previous_entries.extend_from_slice(&history_json.entries);
             }
@@ -106,12 +108,14 @@ impl HistoryManager {
 
         let entries = Vec::<HistoryEntry>::new();
 
-        let file_name = format!("etc/history-{}.json.lz4", session_uuid);
+        let mut file_path = session.data_dir.clone();
 
-        if Path::new(&file_name).exists() {
+        file_path.push(format!("history-{}.json.lz4", session_uuid));
+
+        if file_path.exists() {
             panic!(
                 "Random file name generation failed! File {} already exists!",
-                file_name
+                file_path.to_str().unwrap()
             );
         }
 
@@ -124,7 +128,7 @@ impl HistoryManager {
         };
 
         return Ok(Self {
-            file_name: file_name,
+            file_path: file_path,
             history_json: history_json,
             previous_entries: previous_entries,
         });
@@ -140,8 +144,8 @@ impl HistoryManager {
         self.history_json.entries.push(history_entry.clone());
     }
 
-    pub fn json_from_file(string: &str) -> Result<HistoryJson, Box<dyn Error>> {
-        let data = lz4_flex::block::decompress_size_prepended(&fs::read(string)?)?;
+    pub fn json_from_file(path: PathBuf) -> Result<HistoryJson, Box<dyn Error>> {
+        let data = lz4_flex::block::decompress_size_prepended(&fs::read(path)?)?;
 
         return Ok(serde_json::from_slice(&data)?);
     }
@@ -156,15 +160,10 @@ impl HistoryManager {
             .write(true)
             .create(true)
             .truncate(true)
-            .open(&self.file_name)?;
+            .open(&self.file_path)?;
 
         file.write_all(&data)?;
 
-        return Ok(());
-    }
-
-    pub fn delete_file(&self) -> Result<(), Box<dyn Error>> {
-        fs::remove_file(&self.file_name)?;
         return Ok(());
     }
 }
@@ -179,22 +178,34 @@ mod tests {
     // Test the creation of a history manager
     #[test]
     fn test_new_history_manager() {
-        let history_manager = HistoryManager::new().unwrap();
+        // create a test session
+        let session = Session::new_test();
+
+        session.init().unwrap();
+
+        let history_manager = HistoryManager::new(&session).unwrap();
 
         // File should not exist yet!
-        assert!(!Path::new(&history_manager.file_name).exists());
+        assert!(!&history_manager.file_path.exists());
 
         // There should be no previous entries!
         assert_eq!(history_manager.previous_entries.len(), 0);
 
         // There should also be no entries in the current json!
         assert_eq!(history_manager.history_json.entries.len(), 0);
+
+        session.purge().unwrap();
     }
 
     // Test adding entries to the entry manager
     #[test]
     fn test_add_entry_history_manager() {
-        let mut history_manager = HistoryManager::new().unwrap();
+        // create a test session
+        let session = Session::new_test();
+
+        session.init().unwrap();
+
+        let mut history_manager = HistoryManager::new(&session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
@@ -203,16 +214,23 @@ mod tests {
         history_manager.add_entry(&history_entry);
 
         // File should still not exist!
-        assert!(!Path::new(&history_manager.file_name).exists());
+        assert!(!history_manager.file_path.exists());
 
         // First entry should equal our expression!
         assert_eq!(history_manager.get_entries()[0].to_string(), TWOPTWO);
+
+        session.purge().unwrap();
     }
 
     // Test updating history files
     #[test]
     fn test_update_file_history_manager() {
-        let mut history_manager = HistoryManager::new().unwrap();
+        // create a test session
+        let session = Session::new_test();
+
+        session.init().unwrap();
+
+        let mut history_manager = HistoryManager::new(&session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
@@ -223,22 +241,27 @@ mod tests {
         history_manager.update_file().unwrap();
 
         // File should now exist!
-        assert!(Path::new(&history_manager.file_name).exists());
+        assert!(&history_manager.file_path.exists());
 
         // Check to make sure the json was written to correctly
         assert_eq!(
-            history_manager.history_json,
-            HistoryManager::json_from_file(history_manager.file_name.as_str()).unwrap()
+            history_manager.history_json.clone(),
+            HistoryManager::json_from_file(history_manager.file_path.clone()).unwrap()
         );
 
         // Clean up!
-        history_manager.delete_file().unwrap();
+        session.purge().unwrap();
     }
 
     // Test retrieving history from history files
     #[test]
     fn test_retrive_history_files() {
-        let mut history_manager1 = HistoryManager::new().unwrap();
+        // create a test session
+        let session = Session::new_test();
+        
+        session.init().unwrap();
+
+        let mut history_manager1 = HistoryManager::new(&session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
@@ -248,7 +271,7 @@ mod tests {
 
         history_manager1.update_file().unwrap();
 
-        let history_manager2 = HistoryManager::new().unwrap();
+        let history_manager2 = HistoryManager::new(&session).unwrap();
 
         // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
         assert_eq!(
@@ -256,7 +279,6 @@ mod tests {
             history_manager1.history_json.entries
         );
 
-        // Clean up!
-        history_manager1.delete_file().unwrap();
+        session.purge().unwrap();
     }
 }

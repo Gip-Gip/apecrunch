@@ -20,16 +20,20 @@ mod number;
 mod op_engine;
 mod parser;
 mod tui;
+mod session;
 
+use crate::session::Session;
 use crate::tui::*;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Placeholder main function
 fn main() {
-    let mut tui = Tui::new().unwrap();
+    let session = Session::new();
 
-    tui.apply_theme_toml("etc/theme.toml");
+    session.init().unwrap();
+
+    let mut tui = Tui::new(session).unwrap();
 
     tui.run();
 }
