@@ -12,8 +12,6 @@
  - [ ] Add parentheses
  - [ ] Add summaries to the top of source files
  - [ ] Add the ability to adjust the number of decimal places displayed
- - [ ] Allow the user to quit the program without hitting ctrl+c
- - [ ] Make the theme less ugly
  - [ ] Properly format comments
  - [ ] Store theme in ~/.apecrunch/theme.toml
  - [ ] Store history files in ~/.apecrunch/history/
@@ -27,8 +25,10 @@
  - [x] **Added support for negative numbers** *(commit 1ec049a)*
  - [x] **Added ability to scroll through history** *(commit 6aede0c)*
  - [x] **Added ability to select history entries** *(commit fa7ade5)*
+ - [x] **Added ability to exit program by pressing Esc** *(commit 6366ec7)*
  - [x] **Added automatic saving of calculations across multiple sessions** *(commit 3abc2cc)*
- - [x] **Deuglified layout code** *(commit 6aede0c)*
+ - [x] **Deuglified layout/tui code** *(commit 6aede0c/6366ec7)*
+ - [x] **Enabled crossterm backend** *(commit 6366ec7)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
  - [x] **Made view fullscreen** *(commit 62313aa)*
  - [x] **Made test cases** *(commit ca102c9)*
