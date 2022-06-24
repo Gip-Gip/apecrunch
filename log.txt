@@ -1,0 +1,20 @@
+   Compiling apecrunch v0.0.1 (/home/thompsonc/Projects/apecrunch)
+warning: unused import: `cursive::direction::Direction`
+  --> src/tui.rs:19:5
+   |
+19 | use cursive::direction::Direction;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: associated function is never used: `delete_file`
+   --> src/history.rs:166:12
+    |
+166 |     pub fn delete_file(&self) -> Result<(), Box<dyn Error>> {
+    |            ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `apecrunch` (bin "apecrunch") generated 2 warnings
+    Finished dev [unoptimized + debuginfo] target(s) in 1.41s
+     Running `target/debug/apecrunch`

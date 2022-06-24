@@ -141,8 +141,6 @@ mod tests {
     const TWOETWO_R: &str = "4";
     const TWOQTWO_R: &str = "true";
 
-
-
     // Test basic single number expression operation
     #[test]
     fn test_op_engine_sneo() {
@@ -151,10 +149,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWO);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -167,10 +162,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOPTWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -183,10 +175,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOSTWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -199,10 +188,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOMTWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -215,10 +201,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWODTWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -231,10 +214,7 @@ mod tests {
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOETWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }
@@ -247,10 +227,7 @@ mod tests {
         if let Token::Boolean(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOQTWO_R);
-        }
-
-        else
-        {
+        } else {
             panic!("Didn't return number token!");
         }
     }

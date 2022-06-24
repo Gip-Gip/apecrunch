@@ -140,7 +140,7 @@ impl HistoryManager {
         self.history_json.entries.push(history_entry.clone());
     }
 
-    pub fn json_from_file(string: &str) -> Result<HistoryJson, Box<dyn Error>>{
+    pub fn json_from_file(string: &str) -> Result<HistoryJson, Box<dyn Error>> {
         let data = lz4_flex::block::decompress_size_prepended(&fs::read(string)?)?;
 
         return Ok(serde_json::from_slice(&data)?);
@@ -169,8 +169,6 @@ impl HistoryManager {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -182,7 +180,7 @@ mod tests {
     #[test]
     fn test_new_history_manager() {
         let history_manager = HistoryManager::new().unwrap();
-        
+
         // File should not exist yet!
         assert!(!Path::new(&history_manager.file_name).exists());
 
@@ -199,7 +197,7 @@ mod tests {
         let mut history_manager = HistoryManager::new().unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
-        
+
         let history_entry = HistoryEntry::new(&expression);
 
         history_manager.add_entry(&history_entry);
@@ -217,7 +215,7 @@ mod tests {
         let mut history_manager = HistoryManager::new().unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
-        
+
         let history_entry = HistoryEntry::new(&expression);
 
         history_manager.add_entry(&history_entry);
@@ -228,7 +226,10 @@ mod tests {
         assert!(Path::new(&history_manager.file_name).exists());
 
         // Check to make sure the json was written to correctly
-        assert_eq!(history_manager.history_json, HistoryManager::json_from_file(history_manager.file_name.as_str()).unwrap());
+        assert_eq!(
+            history_manager.history_json,
+            HistoryManager::json_from_file(history_manager.file_name.as_str()).unwrap()
+        );
 
         // Clean up!
         history_manager.delete_file().unwrap();
@@ -236,12 +237,11 @@ mod tests {
 
     // Test retrieving history from history files
     #[test]
-    fn test_retrive_history_files()
-    {
+    fn test_retrive_history_files() {
         let mut history_manager1 = HistoryManager::new().unwrap();
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
-        
+
         let history_entry = HistoryEntry::new(&expression);
 
         history_manager1.add_entry(&history_entry);
@@ -251,7 +251,10 @@ mod tests {
         let history_manager2 = HistoryManager::new().unwrap();
 
         // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
-        assert_eq!(history_manager2.previous_entries, history_manager1.history_json.entries);
+        assert_eq!(
+            history_manager2.previous_entries,
+            history_manager1.history_json.entries
+        );
 
         // Clean up!
         history_manager1.delete_file().unwrap();

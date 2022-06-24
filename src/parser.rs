@@ -200,7 +200,10 @@ mod tests {
     fn test_parser_add() {
         let expression = TWOPTWO;
 
-        let tokenized_expression_ref = Token::Add(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Add(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 
@@ -213,7 +216,10 @@ mod tests {
     fn test_parser_sub() {
         let expression = TWOSTWO;
 
-        let tokenized_expression_ref = Token::Subtract(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Subtract(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 
@@ -226,7 +232,10 @@ mod tests {
     fn test_parser_mul() {
         let expression = TWOMTWO;
 
-        let tokenized_expression_ref = Token::Multiply(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Multiply(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 
@@ -239,7 +248,10 @@ mod tests {
     fn test_parser_div() {
         let expression = TWODTWO;
 
-        let tokenized_expression_ref = Token::Divide(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Divide(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 
@@ -252,7 +264,10 @@ mod tests {
     fn test_parser_exp() {
         let expression = TWOETWO;
 
-        let tokenized_expression_ref = Token::Exponent(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Exponent(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 
@@ -265,7 +280,10 @@ mod tests {
     fn test_parser_eql() {
         let expression = TWOQTWO;
 
-        let tokenized_expression_ref = Token::Equality(Box::new(Token::Number(Number::from_str(TWO).unwrap())), Box::new(Token::Number(Number::from_str(TWO).unwrap())));
+        let tokenized_expression_ref = Token::Equality(
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+            Box::new(Token::Number(Number::from_str(TWO).unwrap())),
+        );
 
         let tokenized_expression_res = parse_str(expression).unwrap();
 

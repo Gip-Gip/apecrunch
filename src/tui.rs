@@ -17,7 +17,11 @@
 
 use crate::history::HistoryEntry;
 use crate::history::HistoryManager;
+use cursive::view::Nameable;
+use cursive::view::Selector;
 use cursive::views::LinearLayout;
+use cursive::views::ViewRef;
+use cursive::View;
 use std::error::Error;
 
 use cursive::views::Dialog;
@@ -32,6 +36,7 @@ use cursive::view::Resizable;
 use cursive::views::EditView;
 
 use cursive::event::Event;
+use cursive::event::Key;
 
 use crate::op_engine;
 use crate::parser;
@@ -41,6 +46,10 @@ use cursive::align::VAlign;
 // Constants!
 
 const TUI_ENTRYBAR_HEIGHT: usize = 1;
+
+const TUI_ENTRYBAR_ID: &str = "entry_bar";
+const TUI_HISTORY_ID: &str = "history";
+const TUI_LAYOUT_ID: &str = "layout";
 
 pub struct Tui {
     cursive: Cursive,
@@ -57,8 +66,6 @@ impl Tui {
         let mut tui = Self { cursive: cursive };
 
         let cache = TuiCache {
-            mark_for_layout: true,
-            entry_bar_cache: String::new(),
             entry_bar_cursor_pos: 0,
             history_manager: HistoryManager::new()?,
         };
@@ -66,6 +73,7 @@ impl Tui {
         tui.cursive.set_user_data(cache);
 
         tui.prime();
+        tui.layout();
 
         return Ok(tui);
     }
@@ -75,30 +83,7 @@ impl Tui {
     // DESCRIPTION:
     //  Basically just a binding to cursive.run()
     pub fn run(&mut self) {
-        self.cursive.run();
-    }
-
-    // tui::Tui::running() - execution loop
-    //
-    // ARGUMENTS:
-    //  cursive: &mut Cursive - referenct to the Cursive instance
-    //
-    // DESCRIPTION:
-    //  Called 30 times a second and does basic mundane tasks which are non-reactive, like seeing if the program is running and properly initialized
-    fn running(cursive: &mut Cursive) {
-        let mut cache = match cursive.user_data::<TuiCache>() {
-            Some(cache) => cache.clone(),
-            None => {
-                panic!("Failed to initialize Cursive instance with cache! this should not happen!");
-            }
-        };
-
-        if cache.mark_for_layout == true && cursive.is_running() {
-            Self::layout(cursive);
-            cache.mark_for_layout = false;
-        }
-
-        cursive.set_user_data(cache);
+        self.cursive.run_crossterm().unwrap();
     }
 
     // tui::Tui::apply_theme_toml() - apply a theme from a TOML file
@@ -119,33 +104,9 @@ impl Tui {
     // DESCRIPTION:
     //  Attach all the events to the cursive instance
     fn prime(&mut self) {
-        // On a resize, mark the cursive instance for re-layout instead of calling layout directly. This combats a small bug I encountered where a resize event would trigger before the previous layout was finished
-        self.cursive.set_on_pre_event
-        (
-            Event::WindowResize,
-            |cursive|
-            {
-                let mut cache = match cursive.user_data::<TuiCache>()
-                {
-                    Some(cache) =>
-                    {
-                        cache.clone()
-                    }
-                    None =>
-                    {
-                        panic!("Failed to initialize Cursive instance with cache! this should not happen!");
-                    }
-                };
-
-                cache.mark_for_layout = true;
-
-                cursive.set_user_data(cache);
-            }
-        );
-
-        // Prime the runtime loop
+        // Bind the escape key to cursive.quit()
         self.cursive
-            .set_on_pre_event(Event::Refresh, |cursive| Self::running(cursive));
+            .set_on_pre_event(Event::Key(Key::Esc), |cursive| cursive.quit());
 
         self.cursive.set_autorefresh(true); // Enable the refresh trigger
     }
@@ -154,9 +115,9 @@ impl Tui {
     //
     // DESCRIPTION:
     //  Grabs the (possibly new) width and height of the TUI and clears+lays out all of the views needed, preserving the content of all the views as well
-    fn layout(cursive: &mut Cursive) {
+    fn layout(&mut self) {
         // Retrieve the cache
-        let cache = match cursive.user_data::<TuiCache>() {
+        let cache = match self.cursive.user_data::<TuiCache>() {
             Some(cache) => cache.clone(),
             None => {
                 panic!("Failed to initialize Cursive instance with cache! this should not happen!");
@@ -175,7 +136,7 @@ impl Tui {
             history_list.add_item(&entry.to_string(), i);
         }
 
-        let mut history_scroll = ScrollView::new(history_list);
+        let mut history_scroll = ScrollView::new(history_list.with_name(TUI_HISTORY_ID));
 
         history_scroll.scroll_to_important_area();
 
@@ -191,22 +152,26 @@ impl Tui {
 
         let mut entry_bar = EditView::new()
             .style(entry_bar_style)
-            .content(cache.entry_bar_cache)
             .on_edit(|cursive, text, cursor| Self::entry_bar_on_edit(cursive, text, cursor))
             .on_submit(|cursive, text| Self::entry_bar_on_submit(cursive, text));
 
         entry_bar.set_cursor(cache.entry_bar_cursor_pos);
 
-        let entry_bar = entry_bar.full_width().fixed_height(TUI_ENTRYBAR_HEIGHT);
+        let entry_bar = entry_bar
+            .with_name(TUI_ENTRYBAR_ID)
+            .full_width()
+            .fixed_height(TUI_ENTRYBAR_HEIGHT);
 
         // Clear cursive and add all the views + reposition them all
 
-        cursive.clear();
+        self.cursive.clear();
         let mut layout = LinearLayout::vertical().child(history).child(entry_bar);
 
-        layout.set_focus_index(layout.len() - 1).unwrap();
+        // Focus on the entry bar
+        layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
 
-        cursive.add_fullscreen_layer(layout);
+        self.cursive
+            .add_fullscreen_layer(layout.with_name(TUI_LAYOUT_ID));
     }
 
     // tui::Tui::entry_bar_on_edit - called each time the entry bar is edited
@@ -219,7 +184,7 @@ impl Tui {
     // DESCRIPTION:
     //  A simple function that is called each time anything is typed or edited in the entry bar. Simply
     //  modifies the Tui cache to reflect the current entry bar data
-    fn entry_bar_on_edit(cursive: &mut Cursive, text: &str, cursor_pos: usize) {
+    fn entry_bar_on_edit(cursive: &mut Cursive, _text: &str, cursor_pos: usize) {
         // Grab the cache
         let mut cache = match cursive.user_data::<TuiCache>() {
             Some(cache) => cache.clone(),
@@ -228,7 +193,6 @@ impl Tui {
             }
         };
 
-        cache.entry_bar_cache = text.to_string();
         cache.entry_bar_cursor_pos = cursor_pos;
 
         cursive.set_user_data(cache); // Store the cache back with the updated entry_bar_cache
@@ -252,6 +216,9 @@ impl Tui {
             }
         };
 
+        let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
+        let mut history: ViewRef<SelectView<usize>> = cursive.find_name(TUI_HISTORY_ID).unwrap();
+
         // Add the current entry bar contents to the history cache and clear the entry bar
         //
 
@@ -266,20 +233,22 @@ impl Tui {
 
         // Go through the tokens an operate on them, getting an equality
         let result = op_engine::get_equality(&tokens);
+        let entry = &HistoryEntry::new(&result);
+        let index = cache.history_manager.get_entries().len();
 
-        cache.history_manager.add_entry(&HistoryEntry::new(&result));
+        cache.history_manager.add_entry(&entry);
+        history.add_item(entry.to_string(), index);
 
         if let Result::Err(error) = cache.history_manager.update_file() {
             Self::nonfatal_error_dialog(cursive, error);
             return;
         }
 
-        cache.entry_bar_cache = String::new();
         cache.entry_bar_cursor_pos = 0;
 
-        cursive.set_user_data(cache); // Store the cache back with the updated history + entry bar cache
+        entry_bar.set_content(""); // Ignore callback
 
-        Self::layout(cursive); // Update the layout
+        cursive.set_user_data(cache); // Store the cache back with the updated history + entry bar cache
     }
 
     // tui::Tui::history_on_select - called each time a history entry is selected
@@ -293,28 +262,38 @@ impl Tui {
     //  inserts it in the cursor's position in the entry bar.
     fn history_on_select(cursive: &mut Cursive, index: usize) {
         // Grab the cache
-        let mut cache = match cursive.user_data::<TuiCache>() {
+        let cache = match cursive.user_data::<TuiCache>() {
             Some(cache) => cache.clone(),
             None => {
                 panic!("Failed to initialize Cursive instance with cache! this should not happen!");
             }
         };
 
+        let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
+        let mut layout: ViewRef<LinearLayout> = cursive.find_name(TUI_LAYOUT_ID).unwrap();
+
+        let entry_bar_content = entry_bar.get_content();
+
+        let mut curser_pos = cache.entry_bar_cursor_pos;
+
         // Get the selected history entry
         let entry = &cache.history_manager.get_entries()[index].render_without_equality();
 
         // Insert the selected history entry into the entry bar at the cursor position
-        let left = &cache.entry_bar_cache[..cache.entry_bar_cursor_pos];
-        let right = &cache.entry_bar_cache[cache.entry_bar_cursor_pos..];
+        let left = &entry_bar_content[..curser_pos];
+        let right = &entry_bar_content[curser_pos..];
 
-        cache.entry_bar_cache = format!("{}{}{}", left, entry, right);
+        let entry_bar_content = format!("{}{}{}", left, entry, right);
 
-        // Update the cursor position
-        cache.entry_bar_cursor_pos += entry.len();
+        curser_pos += entry_bar_content.len();
+
+        entry_bar.set_content(entry_bar_content);
+        entry_bar.set_cursor(curser_pos);
+
+        // Return focus to the entry bar
+        layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
 
         cursive.set_user_data(cache); // Store the cache back with the updated entry_bar_cache
-
-        Self::layout(cursive); // Update the layout
     }
 
     pub fn nonfatal_error_dialog(cursive: &mut Cursive, error: Box<dyn Error>) {
@@ -332,8 +311,6 @@ impl Tui {
 
 #[derive(Debug, Clone)]
 struct TuiCache {
-    pub mark_for_layout: bool,
-    pub entry_bar_cache: String,
     pub entry_bar_cursor_pos: usize,
     pub history_manager: HistoryManager,
 }
