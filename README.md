@@ -13,8 +13,6 @@
  - [ ] Add summaries to the top of source files
  - [ ] Add the ability to adjust the number of decimal places displayed
  - [ ] Properly format comments
- - [ ] Store theme in ~/.apecrunch/theme.toml
- - [ ] Store history files in ~/.apecrunch/history/
 
 ## **Changelog:**
 
@@ -27,6 +25,7 @@
  - [x] **Added ability to select history entries** *(commit fa7ade5)*
  - [x] **Added ability to exit program by pressing Esc** *(commit 6366ec7)*
  - [x] **Added automatic saving of calculations across multiple sessions** *(commit 3abc2cc)*
+ - [x] **Config and history files are now stored per OS requirements** *(commit 7ea163c)*
  - [x] **Deuglified layout/tui code** *(commit 6aede0c/6366ec7)*
  - [x] **Enabled crossterm backend** *(commit 6366ec7)*
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*

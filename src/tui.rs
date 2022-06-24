@@ -15,9 +15,9 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::Session;
 use crate::history::HistoryEntry;
 use crate::history::HistoryManager;
+use crate::Session;
 use cursive::view::Nameable;
 use cursive::view::Selector;
 use cursive::views::LinearLayout;

@@ -13,15 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License along with
 // ApeCrunch(in a file named COPYING).
-// If not, see <https://www.gnu.org/licenses/>. 
+// If not, see <https://www.gnu.org/licenses/>.
 
-use std::io::Write;
-use std::fs::File;
-use std::fs;
-use std::error::Error;
-use std::path::PathBuf;
-use std::path::Path;
 use directories::ProjectDirs;
+use std::error::Error;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub struct Session {
@@ -65,7 +65,6 @@ impl Session {
     }
 
     pub fn init(&self) -> Result<(), Box<dyn Error>> {
-
         // Create the directories if they don't exist
         if !self.config_dir.exists() {
             fs::create_dir_all(self.config_dir.as_path())?;
@@ -84,7 +83,6 @@ impl Session {
     }
 
     pub fn purge(&self) -> Result<(), Box<dyn Error>> {
-
         // Delete the directories if they exist
         if self.config_dir.exists() {
             fs::remove_dir_all(self.config_dir.as_path())?;
@@ -104,11 +102,11 @@ impl Session {
         file_path.push(Path::new(DEFAULT_THEME_TOML_NAME));
 
         return file_path;
-    } 
+    }
 
     pub fn create_default_theme_file(&self) -> Result<(), Box<dyn Error>> {
         let file_path = self.get_theme_file_path();
-        
+
         let mut file = File::options()
             .read(false)
             .write(true)

@@ -19,8 +19,8 @@ mod history;
 mod number;
 mod op_engine;
 mod parser;
-mod tui;
 mod session;
+mod tui;
 
 use crate::session::Session;
 use crate::tui::*;

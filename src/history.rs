@@ -15,9 +15,8 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use std::path::PathBuf;
-use crate::Session;
 use crate::parser::Token;
+use crate::Session;
 use lazy_static::*;
 use regex::Regex;
 use serde::Serialize;
@@ -27,6 +26,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use uuid::Uuid;
@@ -258,7 +258,7 @@ mod tests {
     fn test_retrive_history_files() {
         // create a test session
         let session = Session::new_test();
-        
+
         session.init().unwrap();
 
         let mut history_manager1 = HistoryManager::new(&session).unwrap();
