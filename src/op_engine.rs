@@ -16,6 +16,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::parser::Token;
+use crate::session;
 
 // op_engine::get_equality - get the equality of an expression by recursively simplifying it
 //
@@ -116,7 +117,7 @@ pub fn simplify(tokens: &Token) -> Token {
 
         // It is entirely possible I am still a terrible programmer and somehow I haven't implemented all of the tokens...
         _ => {
-            panic!("Fatal Oopsiedaisies!\n\n\tExpression parsed but the op-engine is not able to simplify on it! {}", tokens.to_string());
+            panic!("Fatal Oopsiedaisies!\n\n\tExpression parsed but the op-engine is not able to simplify on it! {}", tokens.to_string(session::DEFAULT_DECIMAL_PLACES));
         }
     };
 }
@@ -148,7 +149,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWO);
+            assert_eq!(num.to_string(6), TWO);
         } else {
             panic!("Didn't return number token!");
         }
@@ -161,7 +162,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWOPTWO_R);
+            assert_eq!(num.to_string(6), TWOPTWO_R);
         } else {
             panic!("Didn't return number token!");
         }
@@ -174,7 +175,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWOSTWO_R);
+            assert_eq!(num.to_string(6), TWOSTWO_R);
         } else {
             panic!("Didn't return number token!");
         }
@@ -187,7 +188,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWOMTWO_R);
+            assert_eq!(num.to_string(6), TWOMTWO_R);
         } else {
             panic!("Didn't return number token!");
         }
@@ -200,7 +201,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWODTWO_R);
+            assert_eq!(num.to_string(6), TWODTWO_R);
         } else {
             panic!("Didn't return number token!");
         }
@@ -213,7 +214,7 @@ mod tests {
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
-            assert_eq!(num.to_string(), TWOETWO_R);
+            assert_eq!(num.to_string(6), TWOETWO_R);
         } else {
             panic!("Didn't return number token!");
         }

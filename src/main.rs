@@ -29,7 +29,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Placeholder main function
 fn main() {
-    let session = Session::new();
+    let mut session = Session::new();
 
     session.init().unwrap();
 

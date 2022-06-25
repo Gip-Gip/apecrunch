@@ -25,7 +25,6 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -48,24 +47,24 @@ pub struct HistoryEntry {
 }
 
 impl HistoryEntry {
-    pub fn new(expression: &Token) -> Self {
+    pub fn new(expression: &Token, decimal_places: usize) -> Self {
         let entry_uuid = Uuid::new_v4();
         return Self {
             entry_uuid: entry_uuid,
             expression: expression.clone(),
-            rendition: expression.to_string(),
+            rendition: expression.to_string(decimal_places),
         };
     }
     pub fn to_string(&self) -> String {
         return self.rendition.clone();
     }
 
-    pub fn render_without_equality(&self) -> String {
+    pub fn render_without_equality(&self, decimal_places: usize) -> String {
         if let Token::Equality(left, _right) = &self.expression {
-            return left.to_string();
+            return left.to_string(decimal_places);
         }
 
-        return self.expression.to_string();
+        return self.expression.to_string(decimal_places);
     }
 }
 
@@ -179,7 +178,7 @@ mod tests {
     #[test]
     fn test_new_history_manager() {
         // create a test session
-        let session = Session::new_test();
+        let mut session = Session::_new_test();
 
         session.init().unwrap();
 
@@ -201,7 +200,7 @@ mod tests {
     #[test]
     fn test_add_entry_history_manager() {
         // create a test session
-        let session = Session::new_test();
+        let mut session = Session::_new_test();
 
         session.init().unwrap();
 
@@ -209,7 +208,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression);
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
         history_manager.add_entry(&history_entry);
 
@@ -226,7 +225,7 @@ mod tests {
     #[test]
     fn test_update_file_history_manager() {
         // create a test session
-        let session = Session::new_test();
+        let mut session = Session::_new_test();
 
         session.init().unwrap();
 
@@ -234,7 +233,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression);
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
         history_manager.add_entry(&history_entry);
 
@@ -257,7 +256,7 @@ mod tests {
     #[test]
     fn test_retrive_history_files() {
         // create a test session
-        let session = Session::new_test();
+        let mut session = Session::_new_test();
 
         session.init().unwrap();
 
@@ -265,7 +264,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression);
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
         history_manager1.add_entry(&history_entry);
 

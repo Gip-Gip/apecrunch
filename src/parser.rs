@@ -38,28 +38,28 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn to_string(&self) -> String {
+    pub fn to_string(&self, prec: usize) -> String {
         match self {
             Token::Exponent(left, right) => {
-                return format!("{}^{}", left.to_string(), right.to_string());
+                return format!("{}^{}", left.to_string(prec), right.to_string(prec));
             }
             Token::Multiply(left, right) => {
-                return format!("{} * {}", left.to_string(), right.to_string());
+                return format!("{} * {}", left.to_string(prec), right.to_string(prec));
             }
             Token::Divide(left, right) => {
-                return format!("{} / {}", left.to_string(), right.to_string());
+                return format!("{} / {}", left.to_string(prec), right.to_string(prec));
             }
             Token::Add(left, right) => {
-                return format!("{} + {}", left.to_string(), right.to_string());
+                return format!("{} + {}", left.to_string(prec), right.to_string(prec));
             }
             Token::Subtract(left, right) => {
-                return format!("{} - {}", left.to_string(), right.to_string());
+                return format!("{} - {}", left.to_string(prec), right.to_string(prec));
             }
             Token::Equality(left, right) => {
-                return format!("{} = {}", left.to_string(), right.to_string());
+                return format!("{} = {}", left.to_string(prec), right.to_string(prec));
             }
             Token::Number(number) => {
-                return number.to_string();
+                return number.to_string(prec);
             }
             Token::Boolean(boolean) => {
                 return boolean.to_string();

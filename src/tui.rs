@@ -235,7 +235,7 @@ impl Tui {
 
         // Go through the tokens an operate on them, getting an equality
         let result = op_engine::get_equality(&tokens);
-        let entry = &HistoryEntry::new(&result);
+        let entry = &HistoryEntry::new(&result, cache.session.decimal_places);
         let index = cache.history_manager.get_entries().len();
 
         cache.history_manager.add_entry(&entry);
@@ -279,7 +279,8 @@ impl Tui {
         let mut curser_pos = cache.entry_bar_cursor_pos;
 
         // Get the selected history entry
-        let entry = &cache.history_manager.get_entries()[index].render_without_equality();
+        let entry = &cache.history_manager.get_entries()[index]
+            .render_without_equality(cache.session.decimal_places);
 
         // Insert the selected history entry into the entry bar at the cursor position
         let left = &entry_bar_content[..curser_pos];

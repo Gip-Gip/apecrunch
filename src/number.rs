@@ -36,8 +36,17 @@ impl Number {
         return Ok(Number { fraction: fraction });
     }
 
-    pub fn to_string(&self) -> String {
-        return format!("{:.6}", self.fraction);
+    pub fn to_string(&self, prec: usize) -> String {
+        // Tell the user that there is more precision than displayed
+        // I'll eventually think of a better way to see if we should print three dots...
+        let base_str = format!("{num:.prec$}", num = self.fraction, prec = prec);
+        let ext_str = format!("{num:.prec$}", num = self.fraction, prec = prec + 1);
+
+        if ext_str.len() > base_str.len() {
+            return format!("{}...", base_str);
+        }
+
+        return base_str;
     }
 
     pub fn add(&self, other: &Number) -> Number {

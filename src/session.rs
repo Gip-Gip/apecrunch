@@ -16,17 +16,26 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use directories::ProjectDirs;
+use serde::Deserialize;
+use serde::Serialize;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
+use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionTOML {
+    pub decimal_places: usize,
+}
 
 #[derive(Debug, Clone)]
 pub struct Session {
     pub config_dir: PathBuf,
     pub data_dir: PathBuf,
+    pub decimal_places: usize,
 }
 
 impl Session {
@@ -40,31 +49,19 @@ impl Session {
         return Self {
             config_dir: dirs.config_dir().to_owned(),
             data_dir: dirs.data_dir().to_owned(),
+            decimal_places: DEFAULT_DECIMAL_PLACES,
         };
     }
 
-    pub fn new_test() -> Self {
+    pub fn _new_test() -> Self {
         return Self {
             config_dir: Path::new("test/config").to_owned(),
             data_dir: Path::new("test/data").to_owned(),
+            decimal_places: DEFAULT_DECIMAL_PLACES,
         };
     }
 
-    pub fn config_dir(&self, path: &Path) -> Self {
-        return Self {
-            config_dir: path.to_owned(),
-            data_dir: self.data_dir.clone(),
-        };
-    }
-
-    pub fn data_dir(&self, path: &Path) -> Self {
-        return Self {
-            config_dir: self.config_dir.clone(),
-            data_dir: path.to_owned(),
-        };
-    }
-
-    pub fn init(&self) -> Result<(), Box<dyn Error>> {
+    pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
         // Create the directories if they don't exist
         if !self.config_dir.exists() {
             fs::create_dir_all(self.config_dir.as_path())?;
@@ -75,9 +72,27 @@ impl Session {
         }
 
         // Create theme file if it doesn't exist
-        if !self.get_theme_file_path().exists() {
-            self.create_default_theme_file()?;
+        let theme_file_path = self.get_theme_file_path();
+        if !theme_file_path.exists() {
+            self.create_default_config_file(&theme_file_path, DEFAULT_THEME_TOML)?;
         }
+
+        // Create session config file if it doesn't exist
+        let session_config_file_path = self.get_session_config_file_path();
+        if !session_config_file_path.exists() {
+            self.create_default_config_file(&session_config_file_path, DEFAULT_SESSION_TOML)?;
+        }
+
+        // Load the config file
+        let mut session_config_file = File::open(session_config_file_path)?;
+        let mut session_config_data = Vec::<u8>::new();
+
+        session_config_file.read_to_end(&mut session_config_data)?;
+
+        let session_toml: SessionTOML = toml::from_slice(&session_config_data)?;
+
+        // Apply the config file to the session
+        self.decimal_places = session_toml.decimal_places;
 
         return Ok(());
     }
@@ -104,24 +119,43 @@ impl Session {
         return file_path;
     }
 
-    pub fn create_default_theme_file(&self) -> Result<(), Box<dyn Error>> {
-        let file_path = self.get_theme_file_path();
+    pub fn get_session_config_file_path(&self) -> PathBuf {
+        let mut file_path: PathBuf = self.config_dir.clone();
 
+        file_path.push(Path::new(DEFAULT_SESSION_TOML_NAME));
+
+        return file_path;
+    }
+
+    pub fn create_default_config_file(
+        &self,
+        path: &Path,
+        contents: &str,
+    ) -> Result<(), Box<dyn Error>> {
         let mut file = File::options()
             .read(false)
             .write(true)
             .create_new(true)
-            .open(file_path.as_path())?;
+            .open(path)?;
 
-        file.write_all(DEFAULT_THEME_TOML.as_bytes())?;
+        file.write_all(contents.as_bytes())?;
 
         return Ok(());
     }
 }
 
-static DEFAULT_THEME_TOML_NAME: &str = "theme.toml";
+pub const DEFAULT_DECIMAL_PLACES: usize = 6;
 
-static DEFAULT_THEME_TOML: &str = r##"# Auto generated theme
+pub static DEFAULT_SESSION_TOML_NAME: &str = "session.toml";
+
+pub static DEFAULT_THEME_TOML_NAME: &str = "theme.toml";
+
+pub static DEFAULT_SESSION_TOML: &str = r##"# Auto generated session config
+
+decimal_places = 6
+"##;
+
+pub static DEFAULT_THEME_TOML: &str = r##"# Auto generated theme
 
 shadow = false
 borders = "simple"
