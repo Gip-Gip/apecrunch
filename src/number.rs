@@ -39,8 +39,8 @@ impl Number {
 
     pub fn neg_one() -> Self {
         return Self {
-            fraction: BigFraction::new_raw_signed(Sign::Minus, BigUint::one(), BigUint::one())
-        }
+            fraction: BigFraction::new_raw_signed(Sign::Minus, BigUint::one(), BigUint::one()),
+        };
     }
 
     pub fn to_string(&self, prec: usize) -> String {

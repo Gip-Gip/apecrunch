@@ -33,8 +33,8 @@ pub enum Token {
     Add(Box<Token>, Box<Token>),      // "+"
     Subtract(Box<Token>, Box<Token>), // "-"
     Equality(Box<Token>, Box<Token>), // "="
-    Parenthesis(Box<Token>), // ()
-    ParenthesisNeg(Box<Token>), // -()
+    Parenthesis(Box<Token>),          // ()
+    ParenthesisNeg(Box<Token>),       // -()
     Number(Number),                   // 0-9
     Boolean(bool),                    // true or false
 }
@@ -181,21 +181,28 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
     // If the string is an expression surrounded in parenthesis...
     if working_string.chars().next().unwrap() == '(' {
         if NEGATIVE_RE.is_match(string) {
-            return Ok(Token::ParenthesisNeg(Box::new(parse(&string[2..string.len() - 1])?)));
+            return Ok(Token::ParenthesisNeg(Box::new(parse(
+                &string[2..string.len() - 1],
+            )?)));
         }
 
-        return Ok(Token::Parenthesis(Box::new(parse(&string[1..string.len() - 1])?)));
+        return Ok(Token::Parenthesis(Box::new(parse(
+            &string[1..string.len() - 1],
+        )?)));
     }
 
     // At the moment nothing else is supported so we bail!
     bail!("Invalid Expression: {}", string);
 }
 
-pub fn match_outside_parenthesis(string: &str, substring: &str) -> Result<Option<usize>, Box<dyn Error>> {
+pub fn match_outside_parenthesis(
+    string: &str,
+    substring: &str,
+) -> Result<Option<usize>, Box<dyn Error>> {
     let mut nest_level = 0;
     let mut index: usize = 0;
     let mut compare_string = String::with_capacity(substring.len());
-    
+
     for (i, character) in string.chars().enumerate() {
         if character == '(' {
             if index != 0 {
@@ -221,9 +228,7 @@ pub fn match_outside_parenthesis(string: &str, substring: &str) -> Result<Option
                 if compare_string.len() == substring.len() {
                     return Ok(Some(index));
                 }
-            }
-
-            else {
+            } else {
                 index = 0;
                 compare_string.clear();
             }
