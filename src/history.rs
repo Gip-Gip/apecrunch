@@ -17,11 +17,11 @@
 
 use crate::parser::Token;
 use crate::Session;
+use bincode;
 use lazy_static::*;
 use regex::Regex;
 use serde::Serialize;
 use serde::*;
-use bincode;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -152,7 +152,8 @@ impl HistoryManager {
 
     pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
         // Convert the history bincode struct into an lz4-compressed bincode stored in a vector
-        let data = lz4_flex::block::compress_prepend_size(&bincode::serialize(&self.history_bincode)?);
+        let data =
+            lz4_flex::block::compress_prepend_size(&bincode::serialize(&self.history_bincode)?);
 
         // Create the file if it doesn't exist yet, clear it, and write the bincode
         let mut file = File::options()

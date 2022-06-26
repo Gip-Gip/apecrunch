@@ -8,10 +8,10 @@
  - [ ] Add variables
  - [ ] Add good exponents
  - [ ] Add good roots
- - [ ] Add command line arguments
  - [ ] Add dedicated square root function
  - [ ] Add summaries to the top of source files
  - [ ] Properly format comments
+ - [ ] Sort history by creation date
 
 ## **Changelog:**
 
@@ -26,6 +26,8 @@
  - [x] **Added configurable decimal places** *(commit 7b4db5b)*
  - [x] **Added automatic saving of calculations across multiple sessions** *(commit 3abc2cc)*
  - [x] **Added parenthesis** *(commit a33a59c)*
+ - [x] **Added command line arguments** *(commit 7f31193)*
+ - [x] **Changed to bincode for history storage** *(7f31193)*
  - [x] **Config and history files are now stored per OS requirements** *(commit 7ea163c)*
  - [x] **Deuglified layout/tui code** *(commit 6aede0c/6366ec7)*
  - [x] **Enabled crossterm backend** *(commit 6366ec7)*

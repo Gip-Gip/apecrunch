@@ -22,15 +22,15 @@ mod parser;
 mod session;
 mod tui;
 
-use termcolor::ColorSpec;
-use termcolor::WriteColor;
-use termcolor::StandardStream;
-use termcolor::ColorChoice;
-use termcolor::Color;
-use std::io::Write;
 use crate::session::Session;
-use clap::Parser;
 use crate::tui::*;
+use clap::Parser;
+use std::io::Write;
+use termcolor::Color;
+use termcolor::ColorChoice;
+use termcolor::ColorSpec;
+use termcolor::StandardStream;
+use termcolor::WriteColor;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -48,7 +48,7 @@ fn main() {
 
     let args = Args::parse();
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    
+
     let mut green = ColorSpec::new();
 
     green.set_fg(Some(Color::Green));
@@ -57,12 +57,12 @@ fn main() {
         stdout.set_color(&green).unwrap();
         write!(&mut stdout, "\n\n\tConfig Directory:\t");
         stdout.reset().unwrap();
-        writeln!(&mut stdout,"{}", session.config_dir.to_str().unwrap());
+        writeln!(&mut stdout, "{}", session.config_dir.to_str().unwrap());
 
         stdout.set_color(&green).unwrap();
         write!(&mut stdout, "\tHistory Directory:\t");
         stdout.reset().unwrap();
-        writeln!(&mut stdout,"{}\n\n", session.data_dir.to_str().unwrap());
+        writeln!(&mut stdout, "{}\n\n", session.data_dir.to_str().unwrap());
 
         return;
     }
