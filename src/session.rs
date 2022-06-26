@@ -97,7 +97,7 @@ impl Session {
         return Ok(());
     }
 
-    pub fn purge(&self) -> Result<(), Box<dyn Error>> {
+    pub fn _test_purge(&self) -> Result<(), Box<dyn Error>> {
         // Delete the directories if they exist
         if self.config_dir.exists() {
             fs::remove_dir_all(self.config_dir.as_path())?;

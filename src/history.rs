@@ -90,7 +90,7 @@ impl HistoryManager {
             let path = entry?.path().as_path().to_owned();
 
             let file_name = path.to_str().unwrap_or("");
-            
+
             if HISTORY_FILE_RE.is_match(&file_name) {
                 let history_bincode: HistoryBincode = Self::bincode_from_file(path)?;
 
@@ -201,7 +201,7 @@ mod tests {
         // There should also be no entries in the current bincode!
         assert_eq!(history_manager.history_bincode.entries.len(), 0);
 
-        session.purge().unwrap();
+        session._test_purge().unwrap();
     }
 
     // Test adding entries to the entry manager
@@ -226,7 +226,7 @@ mod tests {
         // First entry should equal our expression!
         assert_eq!(history_manager.get_entries()[0].to_string(), TWOPTWO);
 
-        session.purge().unwrap();
+        session._test_purge().unwrap();
     }
 
     // Test updating history files
@@ -257,7 +257,7 @@ mod tests {
         );
 
         // Clean up!
-        session.purge().unwrap();
+        session._test_purge().unwrap();
     }
 
     // Test retrieving history from history files
@@ -286,6 +286,6 @@ mod tests {
             history_manager1.history_bincode.entries
         );
 
-        session.purge().unwrap();
+        session._test_purge().unwrap();
     }
 }
