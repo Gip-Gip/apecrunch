@@ -21,6 +21,7 @@ use lazy_static::*;
 use regex::Regex;
 use serde::Serialize;
 use serde::*;
+use bincode;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -31,7 +32,7 @@ use std::time::UNIX_EPOCH;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct HistoryJson {
+pub struct HistoryBincode {
     version: String,
     session_start: u64,
     session_uuid: Uuid,
@@ -72,7 +73,7 @@ impl HistoryEntry {
 pub struct HistoryManager {
     pub file_path: PathBuf,
     pub previous_entries: Vec<HistoryEntry>,
-    pub history_json: HistoryJson,
+    pub history_bincode: HistoryBincode,
 }
 
 impl HistoryManager {
@@ -80,7 +81,7 @@ impl HistoryManager {
         // Regex definitions for correctly identifying files
         lazy_static! {
             static ref HISTORY_FILE_RE: Regex =
-                Regex::new(r"(.*)(history\-)(.+)(\.json\.lz4)").unwrap();
+                Regex::new(r"(.*)(history\-)(.+)(\.bincode\.lz4)").unwrap();
         }
 
         let mut previous_entries = Vec::<HistoryEntry>::new();
@@ -93,9 +94,9 @@ impl HistoryManager {
             // Odd case where file entry would go through when file is freshly deleted, only encountered in testing
             // Still, check to make sure the file exists before trying to load it...
             if HISTORY_FILE_RE.is_match(&file_name) && path.exists() {
-                let history_json: HistoryJson = Self::json_from_file(path)?;
+                let history_bincode: HistoryBincode = Self::bincode_from_file(path)?;
 
-                previous_entries.extend_from_slice(&history_json.entries);
+                previous_entries.extend_from_slice(&history_bincode.entries);
             }
         }
 
@@ -109,7 +110,7 @@ impl HistoryManager {
 
         let mut file_path = session.data_dir.clone();
 
-        file_path.push(format!("history-{}.json.lz4", session_uuid));
+        file_path.push(format!("history-{}.bincode.lz4", session_uuid));
 
         if file_path.exists() {
             panic!(
@@ -118,7 +119,7 @@ impl HistoryManager {
             );
         }
 
-        let history_json = HistoryJson {
+        let history_bincode = HistoryBincode {
             version: version.to_string(),
             session_start: session_start,
             session_uuid: session_uuid,
@@ -128,32 +129,32 @@ impl HistoryManager {
 
         return Ok(Self {
             file_path: file_path,
-            history_json: history_json,
+            history_bincode: history_bincode,
             previous_entries: previous_entries,
         });
     }
 
     pub fn get_entries(&self) -> Vec<HistoryEntry> {
         let mut total_entries = self.previous_entries.clone();
-        total_entries.extend_from_slice(&self.history_json.entries);
+        total_entries.extend_from_slice(&self.history_bincode.entries);
         return total_entries;
     }
 
     pub fn add_entry(&mut self, history_entry: &HistoryEntry) {
-        self.history_json.entries.push(history_entry.clone());
+        self.history_bincode.entries.push(history_entry.clone());
     }
 
-    pub fn json_from_file(path: PathBuf) -> Result<HistoryJson, Box<dyn Error>> {
+    pub fn bincode_from_file(path: PathBuf) -> Result<HistoryBincode, Box<dyn Error>> {
         let data = lz4_flex::block::decompress_size_prepended(&fs::read(path)?)?;
 
-        return Ok(serde_json::from_slice(&data)?);
+        return Ok(bincode::deserialize(&data)?);
     }
 
     pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
-        // Convert the history json struct into an lz4-compressed json stored in a vector
-        let data = lz4_flex::block::compress_prepend_size(&serde_json::to_vec(&self.history_json)?);
+        // Convert the history bincode struct into an lz4-compressed bincode stored in a vector
+        let data = lz4_flex::block::compress_prepend_size(&bincode::serialize(&self.history_bincode)?);
 
-        // Create the file if it doesn't exist yet, clear it, and write the json
+        // Create the file if it doesn't exist yet, clear it, and write the bincode
         let mut file = File::options()
             .read(false)
             .write(true)
@@ -190,8 +191,8 @@ mod tests {
         // There should be no previous entries!
         assert_eq!(history_manager.previous_entries.len(), 0);
 
-        // There should also be no entries in the current json!
-        assert_eq!(history_manager.history_json.entries.len(), 0);
+        // There should also be no entries in the current bincode!
+        assert_eq!(history_manager.history_bincode.entries.len(), 0);
 
         session.purge().unwrap();
     }
@@ -242,10 +243,10 @@ mod tests {
         // File should now exist!
         assert!(&history_manager.file_path.exists());
 
-        // Check to make sure the json was written to correctly
+        // Check to make sure the bincode was written to correctly
         assert_eq!(
-            history_manager.history_json.clone(),
-            HistoryManager::json_from_file(history_manager.file_path.clone()).unwrap()
+            history_manager.history_bincode.clone(),
+            HistoryManager::bincode_from_file(history_manager.file_path.clone()).unwrap()
         );
 
         // Clean up!
@@ -275,7 +276,7 @@ mod tests {
         // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
         assert_eq!(
             history_manager2.previous_entries,
-            history_manager1.history_json.entries
+            history_manager1.history_bincode.entries
         );
 
         session.purge().unwrap();
