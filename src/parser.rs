@@ -33,6 +33,8 @@ pub enum Token {
     Add(Box<Token>, Box<Token>),      // "+"
     Subtract(Box<Token>, Box<Token>), // "-"
     Equality(Box<Token>, Box<Token>), // "="
+    Parenthesis(Box<Token>), // ()
+    ParenthesisNeg(Box<Token>), // -()
     Number(Number),                   // 0-9
     Boolean(bool),                    // true or false
 }
@@ -58,6 +60,12 @@ impl Token {
             Token::Equality(left, right) => {
                 return format!("{} = {}", left.to_string(prec), right.to_string(prec));
             }
+            Token::Parenthesis(expression) => {
+                return format!("( {} )", expression.to_string(prec));
+            }
+            Token::ParenthesisNeg(expression) => {
+                return format!("-( {} )", expression.to_string(prec));
+            }
             Token::Number(number) => {
                 return number.to_string(prec);
             }
@@ -68,7 +76,7 @@ impl Token {
     }
 }
 
-const ORDER_OF_OPS: [char; 6] = ['=', '-', '+', '/', '*', '^']; // Order of operations, reversed
+const ORDER_OF_OPS: [&str; 6] = ["=", "-", "+", "/", "*", "^"]; // Order of operations, reversed
 
 // parser::parse_str - parse a string into tokens
 //
@@ -98,24 +106,26 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
 fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
     // Regex definitions for various parsing uses
     lazy_static! {
-        static ref NEGATIVE_RE: Regex = Regex::new(r"[=\-\+/\*\^]-").unwrap(); // Used to see if there are negative numbers in the string
+        static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
     }
 
-    let mut working_string = string.clone(); // Used to check for operands in the string, also is mutable so we can just remove negative signs and etc if necissary
-                                             // First see if the string contains an operator...
+    let neg_indicies = NEGATIVE_RE.find_iter(string);
+    let working_string = &NEGATIVE_RE.replace_all(string.clone(), "$a");
+
     for opcode in ORDER_OF_OPS {
         // If so...
-        if working_string.contains(opcode) {
+        let op_index = match_outside_parenthesis(working_string, opcode)?;
+
+        if op_index.is_some() {
             // Split the string at the operator...
-            let mut splitpoint = working_string.find(opcode).unwrap();
+            let mut splitpoint = op_index.unwrap();
 
-            // If the operator is actually a negative sign...
-            if opcode == '-' && (splitpoint == 0 || NEGATIVE_RE.is_match(working_string)) {
-                working_string = &working_string[1..];
-                continue;
+            // Make up for any removed characters in the string
+            for i in neg_indicies {
+                if splitpoint > i.start() {
+                    splitpoint += 1;
+                }
             }
-
-            splitpoint += string.len() - working_string.len(); // Make up for any removed characters from the working string
 
             // If there is nothing to the left or right of the operator, produce an error...
             if splitpoint + 1 == string.len() || splitpoint == 0 {
@@ -128,33 +138,33 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
 
             // Parse the left and right sides recursively...
             return match opcode {
-                '^' => Ok(Token::Exponent(
+                "^" => Ok(Token::Exponent(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
-                '-' => Ok(Token::Subtract(
+                "-" => Ok(Token::Subtract(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
-                '+' => Ok(Token::Add(
+                "+" => Ok(Token::Add(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
-                '/' => Ok(Token::Divide(
+                "/" => Ok(Token::Divide(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
-                '*' => Ok(Token::Multiply(
+                "*" => Ok(Token::Multiply(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
-                '=' => Ok(Token::Equality(
+                "=" => Ok(Token::Equality(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
                 // It is entrely possible I am a terrible programmer and I forgot to implement all the operators in the ORDER_OF_OPS table...
                 _ => {
-                    panic!("Fatal Oopsiedaisies!\n\n\tOperator found in table but no code to handle it: {}", opcode);
+                    panic!("\n\nFatal Oopsiedaisies!\n\n\tOperator found in table but no code to handle it: {}\n\n", opcode);
                 }
             };
         }
@@ -168,8 +178,67 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
         return Ok(Token::Number(Number::from_str(string)?));
     }
 
+    // If the string is an expression surrounded in parenthesis...
+    if working_string.chars().next().unwrap() == '(' {
+        if NEGATIVE_RE.is_match(string) {
+            return Ok(Token::ParenthesisNeg(Box::new(parse(&string[2..string.len() - 1])?)));
+        }
+
+        return Ok(Token::Parenthesis(Box::new(parse(&string[1..string.len() - 1])?)));
+    }
+
     // At the moment nothing else is supported so we bail!
     bail!("Invalid Expression: {}", string);
+}
+
+pub fn match_outside_parenthesis(string: &str, substring: &str) -> Result<Option<usize>, Box<dyn Error>> {
+    let mut nest_level = 0;
+    let mut index: usize = 0;
+    let mut compare_string = String::with_capacity(substring.len());
+    
+    for (i, character) in string.chars().enumerate() {
+        if character == '(' {
+            if index != 0 {
+                compare_string.clear();
+                index = 0;
+            }
+
+            nest_level += 1;
+        }
+
+        if character == ')' {
+            nest_level -= 1;
+        }
+
+        if nest_level == 0 {
+            compare_string.push(character);
+
+            if compare_string == substring[..compare_string.len()] {
+                if index == 0 {
+                    index = i;
+                }
+
+                if compare_string.len() == substring.len() {
+                    return Ok(Some(index));
+                }
+            }
+
+            else {
+                index = 0;
+                compare_string.clear();
+            }
+        }
+    }
+
+    if nest_level > 0 {
+        bail!("Forgot to close parenthesis!");
+    }
+
+    if nest_level < 0 {
+        bail!("Too many closing parenthesis!");
+    }
+
+    return Ok(None);
 }
 
 #[cfg(test)]

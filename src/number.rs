@@ -18,6 +18,7 @@
 use fraction::BigFraction;
 use fraction::BigUint;
 use fraction::One;
+use fraction::Sign;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
@@ -34,6 +35,12 @@ impl Number {
         let fraction = BigFraction::from_str(string)?;
 
         return Ok(Number { fraction: fraction });
+    }
+
+    pub fn neg_one() -> Self {
+        return Self {
+            fraction: BigFraction::new_raw_signed(Sign::Minus, BigUint::one(), BigUint::one())
+        }
     }
 
     pub fn to_string(&self, prec: usize) -> String {

@@ -15,6 +15,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::number::Number;
 use crate::parser::Token;
 use crate::session;
 
@@ -111,6 +112,15 @@ pub fn simplify(tokens: &Token) -> Token {
             let right_result = simplify(right);
 
             return Token::Boolean(left_result == right_result);
+        }
+
+        Token::ParenthesisNeg(expression) =>{
+            let return_token = Token::Multiply(expression.to_owned(), Box::new(Token::Number(Number::neg_one())));
+            return simplify(&return_token);
+        }
+
+        Token::Parenthesis(expression) => {
+            return simplify(expression);
         }
 
         Token::Number(number) => Token::Number(number.clone()),
