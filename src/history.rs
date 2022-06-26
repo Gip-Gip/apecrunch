@@ -84,20 +84,26 @@ impl HistoryManager {
                 Regex::new(r"(.*)(history\-)(.+)(\.bincode\.lz4)").unwrap();
         }
 
-        let mut previous_entries = Vec::<HistoryEntry>::new();
+        let mut previous_bincodes = Vec::<HistoryBincode>::new();
 
         for entry in fs::read_dir(&session.data_dir)? {
             let path = entry?.path().as_path().to_owned();
 
             let file_name = path.to_str().unwrap_or("");
-
-            // Odd case where file entry would go through when file is freshly deleted, only encountered in testing
-            // Still, check to make sure the file exists before trying to load it...
-            if HISTORY_FILE_RE.is_match(&file_name) && path.exists() {
+            
+            if HISTORY_FILE_RE.is_match(&file_name) {
                 let history_bincode: HistoryBincode = Self::bincode_from_file(path)?;
 
-                previous_entries.extend_from_slice(&history_bincode.entries);
+                previous_bincodes.push(history_bincode);
             }
+        }
+
+        previous_bincodes.sort_by(|a, b| a.session_start.cmp(&b.session_start));
+
+        let mut previous_entries = Vec::<HistoryEntry>::new();
+
+        for session in previous_bincodes {
+            previous_entries.extend_from_slice(&session.entries);
         }
 
         let session_start = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();

@@ -55,14 +55,14 @@ fn main() {
 
     if args.print_file_paths {
         stdout.set_color(&green).unwrap();
-        write!(&mut stdout, "\n\n\tConfig Directory:\t");
+        write!(&mut stdout, "\n\n\tConfig Directory:\t").unwrap();
         stdout.reset().unwrap();
-        writeln!(&mut stdout, "{}", session.config_dir.to_str().unwrap());
+        writeln!(&mut stdout, "{}", session.config_dir.to_str().unwrap()).unwrap();
 
         stdout.set_color(&green).unwrap();
-        write!(&mut stdout, "\tHistory Directory:\t");
+        write!(&mut stdout, "\tHistory Directory:\t").unwrap();
         stdout.reset().unwrap();
-        writeln!(&mut stdout, "{}\n\n", session.data_dir.to_str().unwrap());
+        writeln!(&mut stdout, "{}\n\n", session.data_dir.to_str().unwrap()).unwrap();
 
         return;
     }
