@@ -5,13 +5,12 @@
 **ApeCrunch** aims to be a fast, user-friendly Rust/TUI calculator port of the popular [SpeedCrunch](https://speedcrunch.org/) project. While not a copy-paste port, there are plans to implement every function SpeedCrunch supports plus the addition of much more
 
 ## **TO-DO:**
+ - [ ] Add summaries to the top of source files
+ - [ ] Properly format comments
  - [ ] Add variables
  - [ ] Add good exponents
  - [ ] Add good roots
  - [ ] Add dedicated square root function
- - [ ] Add summaries to the top of source files
- - [ ] Properly format comments
- - [ ] Sort history by creation date
 
 ## **Changelog:**
 
@@ -34,4 +33,5 @@
  - [x] **No longer crashes when empty expression is entered** *(commit 159c78a)*
  - [x] **Made view fullscreen** *(commit 62313aa)*
  - [x] **Made test cases** *(commit ca102c9)*
+ - [x] **Sessions are now sorted by start date upon loading** *(commit 6911f74)*
  - [x] **Ran rustfmt on source code** *(commit 24b37cd)*
