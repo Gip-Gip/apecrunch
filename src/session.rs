@@ -60,11 +60,11 @@ impl Session {
 
         let dirs = ProjectDirs::from(qualifier, organisation, application).unwrap();
 
-        return Self {
+        Self {
             config_dir: dirs.config_dir().to_owned(),
             data_dir: dirs.data_dir().to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
-        };
+        }
     }
 
     /// Creates a session that is safe for cargo test.
@@ -72,11 +72,11 @@ impl Session {
     /// Config and data files are stored in test/config/ and test/data/ respectively.
     ///
     pub fn _new_test() -> Self {
-        return Self {
+        Self {
             config_dir: Path::new("test/config").to_owned(),
             data_dir: Path::new("test/data").to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
-        };
+        }
     }
 
     /// Initialize a session, reading and, if necissary, creating, various config files needed for basic operation.
@@ -114,7 +114,7 @@ impl Session {
         // Apply the config file to the session.
         self.decimal_places = session_toml.decimal_places;
 
-        return Ok(());
+        Ok(())
     }
 
     /// Purge all config and data files, currently only used in cargo test.
@@ -130,7 +130,7 @@ impl Session {
             fs::remove_dir_all(self.data_dir.as_path())?;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     /// Get the path to the theme file, given the default theme filename.
@@ -140,7 +140,7 @@ impl Session {
 
         file_path.push(Path::new(DEFAULT_THEME_TOML_NAME));
 
-        return file_path;
+        file_path
     }
 
     /// Get the path to the session config file, given the default config filename.
@@ -150,7 +150,7 @@ impl Session {
 
         file_path.push(Path::new(DEFAULT_SESSION_TOML_NAME));
 
-        return file_path;
+        file_path
     }
 
     /// Create a given default config file given a path and the contents of the file in a string.
@@ -170,7 +170,7 @@ impl Session {
 
         file.write_all(contents.as_bytes())?;
 
-        return Ok(());
+        Ok(())
     }
 }
 

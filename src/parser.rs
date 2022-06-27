@@ -60,34 +60,34 @@ impl Token {
     pub fn to_string(&self, prec: usize) -> String {
         match self {
             Token::Exponent(left, right) => {
-                return format!("{}^{}", left.to_string(prec), right.to_string(prec));
+                format!("{}^{}", left.to_string(prec), right.to_string(prec))
             }
             Token::Multiply(left, right) => {
-                return format!("{} * {}", left.to_string(prec), right.to_string(prec));
+                format!("{} * {}", left.to_string(prec), right.to_string(prec))
             }
             Token::Divide(left, right) => {
-                return format!("{} / {}", left.to_string(prec), right.to_string(prec));
+                format!("{} / {}", left.to_string(prec), right.to_string(prec))
             }
             Token::Add(left, right) => {
-                return format!("{} + {}", left.to_string(prec), right.to_string(prec));
+                format!("{} + {}", left.to_string(prec), right.to_string(prec))
             }
             Token::Subtract(left, right) => {
-                return format!("{} - {}", left.to_string(prec), right.to_string(prec));
+                format!("{} - {}", left.to_string(prec), right.to_string(prec))
             }
             Token::Equality(left, right) => {
-                return format!("{} = {}", left.to_string(prec), right.to_string(prec));
+                format!("{} = {}", left.to_string(prec), right.to_string(prec))
             }
             Token::Parenthesis(expression) => {
-                return format!("( {} )", expression.to_string(prec));
+                format!("( {} )", expression.to_string(prec))
             }
             Token::ParenthesisNeg(expression) => {
-                return format!("-( {} )", expression.to_string(prec));
+                format!("-( {} )", expression.to_string(prec))
             }
             Token::Number(number) => {
-                return number.to_string(prec);
+                number.to_string(prec)
             }
             Token::Boolean(boolean) => {
-                return boolean.to_string();
+                boolean.to_string()
             }
         }
     }
@@ -110,7 +110,7 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
         bail!("Empty Expression!");
     }
 
-    return Ok(parse(&cleaned_string)?);
+    Ok(parse(&cleaned_string)?)
 }
 
 /// Parses a string recursively, breaking it down into Tokens.
@@ -278,7 +278,7 @@ pub fn match_outside_parenthesis(
         bail!("Too many closing parenthesis!");
     }
 
-    return Ok(None);
+    Ok(None)
 }
 
 #[cfg(test)]

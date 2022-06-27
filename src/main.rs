@@ -32,15 +32,19 @@ use termcolor::ColorSpec;
 use termcolor::StandardStream;
 use termcolor::WriteColor;
 
+/// Version of apecrunch, derived from the Cargo.toml version.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Command-line arguments, parsed via CLAP.
+/// 
+/// **NOT PUBLIC.**
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(short, long)]
     print_file_paths: bool,
 }
 
-// Placeholder main function
+// Placeholder main function.
 fn main() {
     let mut session = Session::new();
 

@@ -27,7 +27,7 @@ use crate::session;
 /// For example, 2+2 would be equal to 4.
 ///
 pub fn get_equality(tokens: &Token) -> Token {
-    return Token::Equality(Box::new(tokens.clone()), Box::new(simplify(tokens)));
+    Token::Equality(Box::new(tokens.clone()), Box::new(simplify(tokens)))
 }
 
 /// Recursively simplifies an expression, performing various operations like multiplication, division, etc. etc.
@@ -35,7 +35,7 @@ pub fn get_equality(tokens: &Token) -> Token {
 /// For example, 2+2 would simplify into 4.
 ///
 pub fn simplify(tokens: &Token) -> Token {
-    return match tokens {
+    match tokens {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {
             let left_result = simplify(left); // Recursively simplify the left side.
@@ -49,7 +49,7 @@ pub fn simplify(tokens: &Token) -> Token {
             }
 
             // Otherwise it cannot be further simplified, and we must return a multiply token.
-            return Token::Multiply(Box::new(left_result), Box::new(right_result));
+            Token::Multiply(Box::new(left_result), Box::new(right_result))
         }
 
         Token::Divide(left, right) => {
@@ -62,7 +62,7 @@ pub fn simplify(tokens: &Token) -> Token {
                 }
             }
 
-            return Token::Divide(Box::new(left_result), Box::new(right_result));
+            Token::Divide(Box::new(left_result), Box::new(right_result))
         }
 
         Token::Add(left, right) => {
@@ -75,7 +75,7 @@ pub fn simplify(tokens: &Token) -> Token {
                 }
             }
 
-            return Token::Add(Box::new(left_result), Box::new(right_result));
+            Token::Add(Box::new(left_result), Box::new(right_result))
         }
 
         Token::Subtract(left, right) => {
@@ -88,7 +88,7 @@ pub fn simplify(tokens: &Token) -> Token {
                 }
             }
 
-            return Token::Subtract(Box::new(left_result), Box::new(right_result));
+            Token::Subtract(Box::new(left_result), Box::new(right_result))
         }
 
         Token::Exponent(left, right) => {
@@ -101,14 +101,14 @@ pub fn simplify(tokens: &Token) -> Token {
                 }
             }
 
-            return Token::Exponent(Box::new(left_result), Box::new(right_result));
+            Token::Exponent(Box::new(left_result), Box::new(right_result))
         }
 
         Token::Equality(left, right) => {
             let left_result = simplify(left);
             let right_result = simplify(right);
 
-            return Token::Boolean(left_result == right_result);
+            Token::Boolean(left_result == right_result)
         }
 
         Token::ParenthesisNeg(expression) => {
@@ -116,12 +116,10 @@ pub fn simplify(tokens: &Token) -> Token {
                 expression.to_owned(),
                 Box::new(Token::Number(Number::neg_one())),
             );
-            return simplify(&return_token);
+            simplify(&return_token)
         }
 
-        Token::Parenthesis(expression) => {
-            return simplify(expression);
-        }
+        Token::Parenthesis(expression) => simplify(expression),
 
         Token::Number(number) => Token::Number(number.clone()),
 
@@ -129,7 +127,7 @@ pub fn simplify(tokens: &Token) -> Token {
         _ => {
             panic!("Fatal Oopsiedaisies!\n\n\tExpression parsed but the op-engine is not able to simplify on it! {}", tokens.to_string(session::DEFAULT_DECIMAL_PLACES));
         }
-    };
+    }
 }
 
 #[cfg(test)]

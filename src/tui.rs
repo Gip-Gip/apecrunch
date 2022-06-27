@@ -91,7 +91,7 @@ impl Tui {
         tui.prime(); // Prime all event handlers.
         tui.layout(); // Lay out all of the views.
 
-        return Ok(tui);
+        Ok(tui)
     }
 
     /// Run the cursive instance.
@@ -297,7 +297,6 @@ impl Tui {
                 });
 
         cursive.add_layer(error_dialog);
-        return;
     }
 }
 

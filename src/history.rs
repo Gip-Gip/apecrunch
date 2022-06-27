@@ -56,7 +56,7 @@ impl HistoryBincode {
     pub fn from_slice(slice: &[u8]) -> Result<Self, Box<dyn Error>> {
         let uncompressed_data = lz4_flex::block::decompress_size_prepended(slice)?;
 
-        return Ok(bincode::deserialize(&uncompressed_data)?);
+        Ok(bincode::deserialize(&uncompressed_data)?)
     }
 
     /// Serialize a HistoryBincode into an lz4_flex-compressed bincode, stored in a Vec<u8>
@@ -65,9 +65,9 @@ impl HistoryBincode {
     /// though I doubt this will become a problem unless you leave the same ApeCrunch instance open for a couple thousand years...
     ///
     pub fn to_vec(&self) -> Result<Vec<u8>, Box<dyn Error>> {
-        return Ok(lz4_flex::block::compress_prepend_size(&bincode::serialize(
+        Ok(lz4_flex::block::compress_prepend_size(&bincode::serialize(
             &self,
-        )?));
+        )?))
     }
 }
 
@@ -88,17 +88,18 @@ impl HistoryEntry {
     ///
     pub fn new(expression: &Token, decimal_places: usize) -> Self {
         let entry_uuid = Uuid::new_v4();
-        return Self {
+
+        Self {
             entry_uuid: entry_uuid,
             expression: expression.clone(),
             rendition: expression.to_string(decimal_places),
-        };
+        }
     }
 
     /// Converts the entry to a string.
     ///
     pub fn to_string(&self) -> String {
-        return self.rendition.clone();
+        self.rendition.clone()
     }
 
     /// Renders the entry without an equal sign, nor everything right of it.
@@ -110,7 +111,7 @@ impl HistoryEntry {
             return left.to_string(decimal_places);
         }
 
-        return self.expression.to_string(decimal_places);
+        self.expression.to_string(decimal_places)
     }
 }
 
@@ -192,11 +193,11 @@ impl HistoryManager {
             entries: entries,
         };
 
-        return Ok(Self {
+        Ok(Self {
             file_path: file_path,
             history_bincode: history_bincode,
             previous_entries: previous_entries,
-        });
+        })
     }
 
     /// Returns a concatination of all previous entries and all current entries.
@@ -204,7 +205,8 @@ impl HistoryManager {
     pub fn get_entries(&self) -> Vec<HistoryEntry> {
         let mut total_entries = self.previous_entries.clone();
         total_entries.extend_from_slice(&self.history_bincode.entries);
-        return total_entries;
+
+        total_entries
     }
 
     /// Add an entry to the current session.
@@ -228,7 +230,7 @@ impl HistoryManager {
 
         file.write_all(&data)?;
 
-        return Ok(());
+        Ok(())
     }
 }
 

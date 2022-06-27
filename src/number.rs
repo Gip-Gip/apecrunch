@@ -40,15 +40,15 @@ impl Number {
     pub fn from_str(string: &str) -> Result<Self, Box<dyn Error>> {
         let fraction = BigFraction::from_str(string)?;
 
-        return Ok(Number { fraction: fraction });
+        Ok(Number { fraction: fraction })
     }
 
     /// Returns -1 as a number.
     ///
     pub fn neg_one() -> Self {
-        return Self {
+        Self {
             fraction: BigFraction::new_raw_signed(Sign::Minus, BigUint::one(), BigUint::one()),
-        };
+        }
     }
 
     /// Renders the number to a string.
@@ -65,39 +65,39 @@ impl Number {
             return format!("{}...", base_str);
         }
 
-        return base_str;
+        base_str
     }
 
     /// Adds this number to another number.
     ///
     pub fn add(&self, other: &Number) -> Number {
-        return Number {
+        Number {
             fraction: &self.fraction + &other.fraction,
-        };
+        }
     }
 
     /// Subtracts a number from this number.
     ///
     pub fn subtract(&self, other: &Number) -> Number {
-        return Number {
+        Number {
             fraction: &self.fraction - &other.fraction,
-        };
+        }
     }
 
     /// Multiplies this number by another number.
     ///
     pub fn multiply(&self, other: &Number) -> Number {
-        return Number {
+        Number {
             fraction: &self.fraction * &other.fraction,
-        };
+        }
     }
 
     /// Divides this number by another number.
     ///
     pub fn divide(&self, other: &Number) -> Number {
-        return Number {
+        Number {
             fraction: &self.fraction / &other.fraction,
-        };
+        }
     }
     /// Raises this number to the power of another number.
     ///
@@ -125,7 +125,7 @@ impl Number {
             ),
         };
 
-        return Self::root(&powered, &root);
+        Self::root(&powered, &root)
     }
 
     /// Gets the nth root of this number.
@@ -162,8 +162,8 @@ impl Number {
             return Number { fraction: result };
         }
 
-        return Number {
+        Number {
             fraction: self.fraction.clone(),
-        };
+        }
     }
 }
