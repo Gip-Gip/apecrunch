@@ -1,3 +1,6 @@
+//! Operation-engine. Functions for performing operations on parsed expressions.
+//!
+
 // Copyright (c) 2022 Charles M. Thompson
 //
 // This file is part of ApeCrunch.
@@ -19,39 +22,33 @@ use crate::number::Number;
 use crate::parser::Token;
 use crate::session;
 
-// op_engine::get_equality - get the equality of an expression by recursively simplifying it
-//
-// ARGUMENTS:
-//  token: &Token - tokenized expression to get the equality of
-//
-// DESCRIPTION:
-//  This function gets the equality of an expression by recursively simplifying it
+/// Simplifies the given parser tokens and asserts they are equal to the unsimplified parser tokens, returning both in an equality token.alloc
+///
+/// For example, 2+2 would be equal to 4.
+///
 pub fn get_equality(tokens: &Token) -> Token {
     return Token::Equality(Box::new(tokens.clone()), Box::new(simplify(tokens)));
 }
 
-// op_engine::simplify - recursively simplify an expression
-//
-// ARGUMENTS:
-//  token: &Token - tokenized expression to simplify
-//
-// DESCRIPTION:
-//  This function recursively simplifies an expression
+/// Recursively simplifies an expression, performing various operations like multiplication, division, etc. etc.
+///
+/// For example, 2+2 would simplify into 4.
+///
 pub fn simplify(tokens: &Token) -> Token {
     return match tokens {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {
-            let left_result = simplify(left); // Recursively simplify the left side
-            let right_result = simplify(right); // Recursively simplify the right side
+            let left_result = simplify(left); // Recursively simplify the left side.
+            let right_result = simplify(right); // Recursively simplify the right side.
 
-            // If both sides are numbers, operate on them and return a number token
+            // If both sides are numbers, operate on them and return a number token.
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.multiply(&right_number)); // In this case we multiply the two
+                    return Token::Number(left_number.multiply(&right_number)); // In this case we multiply the two.
                 }
             }
 
-            // Otherwise it cannot be further simplified, and we must return a multiply token
+            // Otherwise it cannot be further simplified, and we must return a multiply token.
             return Token::Multiply(Box::new(left_result), Box::new(right_result));
         }
 

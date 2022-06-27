@@ -1,3 +1,6 @@
+//! Built-in number type.
+//!
+
 // Copyright (c) 2022 Charles M. Thompson
 //
 // This file is part of ApeCrunch.
@@ -24,25 +27,34 @@ use serde::Serialize;
 use std::error::Error;
 use std::str::FromStr;
 
+/// Type used to represent and operate on all numerical values, currently just a Big Fraction.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-// Placeholder number struct, will be converted to a fractional number later...
 pub struct Number {
+    /// Fractional representation of the number.
     fraction: BigFraction,
 }
 
 impl Number {
+    /// Converts a string to a number.
+    ///
     pub fn from_str(string: &str) -> Result<Self, Box<dyn Error>> {
         let fraction = BigFraction::from_str(string)?;
 
         return Ok(Number { fraction: fraction });
     }
 
+    /// Returns -1 as a number.
+    ///
     pub fn neg_one() -> Self {
         return Self {
             fraction: BigFraction::new_raw_signed(Sign::Minus, BigUint::one(), BigUint::one()),
         };
     }
 
+    /// Renders the number to a string.
+    ///
+    /// Postfixes three dots to indicate there's a loss of precision when rendering.
+    ///
     pub fn to_string(&self, prec: usize) -> String {
         // Tell the user that there is more precision than displayed
         // I'll eventually think of a better way to see if we should print three dots...
@@ -56,43 +68,53 @@ impl Number {
         return base_str;
     }
 
+    /// Adds this number to another number.
+    ///
     pub fn add(&self, other: &Number) -> Number {
         return Number {
             fraction: &self.fraction + &other.fraction,
         };
     }
 
+    /// Subtracts a number from this number.
+    ///
     pub fn subtract(&self, other: &Number) -> Number {
         return Number {
             fraction: &self.fraction - &other.fraction,
         };
     }
 
+    /// Multiplies this number by another number.
+    ///
     pub fn multiply(&self, other: &Number) -> Number {
         return Number {
             fraction: &self.fraction * &other.fraction,
         };
     }
 
+    /// Divides this number by another number.
+    ///
     pub fn divide(&self, other: &Number) -> Number {
         return Number {
             fraction: &self.fraction / &other.fraction,
         };
     }
-
-    // Very bad placeholder exponent function, will get with devs of the fraction crate to add .pow and .sqrt functions to the BigFraction struct
+    /// Raises this number to the power of another number.
+    ///
+    /// Very bad placeholder exponent function, will get with devs of the fraction crate to add .pow and .sqrt functions to the BigFraction struct.
+    ///
     pub fn exponent(&self, other: &Number) -> Number {
         let mut num = self.fraction.clone();
 
         let mut exp = other.fraction.numer().unwrap().clone();
 
-        // Power the number by the numerator of the exponent
+        // Power the number by the numerator of the exponent.
         while !exp.is_one() {
             num = &num * &self.fraction;
             exp -= &BigUint::one();
         }
 
-        // Root the number by the denominator of the exponent
+        // Root the number by the denominator of the exponent.
 
         let powered = Number { fraction: num };
 
@@ -106,7 +128,10 @@ impl Number {
         return Self::root(&powered, &root);
     }
 
-    // Hilariously awful root function, temporary placeholder
+    /// Gets the nth root of this number.
+    ///
+    /// Hilariously awful root function, temporary placeholder. **VERY SLOW AND VERY INACCURATE.**
+    ///
     pub fn root(&self, other: &Number) -> Number {
         if other.fraction > BigFraction::one() {
             let mut i = 100;

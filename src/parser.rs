@@ -1,3 +1,6 @@
+//! Parsing functions and other useful structs.
+//!
+
 // Copyright (c) 2022 Charles M. Thompson
 //
 // This file is part of ApeCrunch.
@@ -23,23 +26,37 @@ use serde::Serialize;
 use simple_error::*;
 use std::error::Error;
 
-// parser::Token - enum for tokens
-//
+/// Represents either a single parser token or an entire tokenized expression.
+///
+/// 2+2 would parse down roughly to Add(Number(2), Number(2)).
+///
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Token {
-    Exponent(Box<Token>, Box<Token>), // "^"
-    Multiply(Box<Token>, Box<Token>), // "*"
-    Divide(Box<Token>, Box<Token>),   // "/"
-    Add(Box<Token>, Box<Token>),      // "+"
-    Subtract(Box<Token>, Box<Token>), // "-"
-    Equality(Box<Token>, Box<Token>), // "="
-    Parenthesis(Box<Token>),          // ()
-    ParenthesisNeg(Box<Token>),       // -()
-    Number(Number),                   // 0-9
-    Boolean(bool),                    // true or false
+    /// Exponent token, parsed from "^".
+    Exponent(Box<Token>, Box<Token>),
+    /// Multiply token, parse from "*".
+    Multiply(Box<Token>, Box<Token>),
+    /// Divide token, parsed from "/".
+    Divide(Box<Token>, Box<Token>),
+    /// Add token, parsed from "+".
+    Add(Box<Token>, Box<Token>),
+    /// Subtract token, parsed from "-".
+    Subtract(Box<Token>, Box<Token>),
+    /// Equality token, parsed from "=".
+    Equality(Box<Token>, Box<Token>),
+    /// Parenthesis token, parsed from "()".
+    Parenthesis(Box<Token>),
+    /// Negative parethesis token, parsed from "-()".
+    ParenthesisNeg(Box<Token>),
+    /// Number token, parsed from any number 0-9.
+    Number(Number),
+    /// Boolean token, not currently parsed but can be returned from simplify functions.
+    Boolean(bool),
 }
 
 impl Token {
+    /// Converts entire tokenized expressions into strings recursively.
+    ///
     pub fn to_string(&self, prec: usize) -> String {
         match self {
             Token::Exponent(left, right) => {
@@ -76,15 +93,16 @@ impl Token {
     }
 }
 
-const ORDER_OF_OPS: [&str; 6] = ["=", "-", "+", "/", "*", "^"]; // Order of operations, reversed
+/// Reverse order of operations.
+///
+/// **NOT PUBLIC.**
+///
+const ORDER_OF_OPS: [&str; 6] = ["=", "-", "+", "/", "*", "^"];
 
-// parser::parse_str - parse a string into tokens
-//
-// ARGUMENTS:
-//  string: &str - string to parse
-//
-// DESCRIPTION:
-//  This function strips the string of whitespace and parses it into tokens through the recursive function parse()
+/// Strips a string of whitespace, makes sure it's not empty, and runs the string through parse()!
+///
+/// Throws a simple error if the expression is empty.
+///
 pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
     let cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();
 
@@ -95,16 +113,16 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
     return Ok(parse(&cleaned_string)?);
 }
 
-// parser::parse - parse a cleaned string into tokens
-//
-// ARGUMENTS:
-//  string: &str - string to parse
-//
-// DESCRIPTION:
-//  This function parses a string into tokens recusively.
-//  **THIS FUNCTION ONLY ACCEPTS WHITESPACE FREE STRINGS**
+/// Parses a string recursively, breaking it down into Tokens.
+///
+/// Returns a simple error if the expression is invalid or incomplete.
+///
+/// **NOTE: THIS FUNCTION ONLY ACCEPTS WHITESPACE FREE STRINGS.**
+///
+/// **NOT PUBLIC. USE parse_str() INSTEAD.**
+///
 fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
-    // Regex definitions for various parsing uses
+    // Regex definitions for various parsing uses.
     lazy_static! {
         static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
     }
@@ -120,7 +138,7 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
             // Split the string at the operator...
             let mut splitpoint = op_index.unwrap();
 
-            // Make up for any removed characters in the string
+            // Make up for any removed characters in the string.
             for i in neg_indicies {
                 if splitpoint > i.start() {
                     splitpoint += 1;
@@ -195,6 +213,12 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
     bail!("Invalid Expression: {}", string);
 }
 
+/// Searches for the given substring outside of parenthesis.
+///
+/// Returns the index of the substring if found, None if otherwise.
+///
+/// Also returns a simple error if there is an unmatched pair of parenthesis.
+///
 pub fn match_outside_parenthesis(
     string: &str,
     substring: &str,
@@ -205,36 +229,47 @@ pub fn match_outside_parenthesis(
 
     for (i, character) in string.chars().enumerate() {
         if character == '(' {
+            // Clear the compare string and set the index back to zero if we encounter a parenthesis mid match.
             if index != 0 {
                 compare_string.clear();
                 index = 0;
             }
 
+            // Increment the nest level if we hit an opening parenthesis.
             nest_level += 1;
         }
 
+        // Decrement the nest level if we hit a closing parenthesis.
         if character == ')' {
             nest_level -= 1;
         }
 
+        // If we're currently not nested in any parenthesis...
         if nest_level == 0 {
+            // Push the current character to the compare string...
             compare_string.push(character);
 
+            // And if the two strings are starting to look equal...
             if compare_string == substring[..compare_string.len()] {
+                // And the index hasn't been set yet, set the index to the current i.
                 if index == 0 {
                     index = i;
                 }
 
+                // Or if the strings are equal, return the index
                 if compare_string.len() == substring.len() {
                     return Ok(Some(index));
                 }
-            } else {
+            }
+            // Otherwise, sadly we haven't found a match so we must return the index to zero and clear the compare string.
+            else {
                 index = 0;
                 compare_string.clear();
             }
         }
     }
 
+    // If the nest level isn't zero something is wrong with the expression...
     if nest_level > 0 {
         bail!("Forgot to close parenthesis!");
     }

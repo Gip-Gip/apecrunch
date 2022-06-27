@@ -1,3 +1,6 @@
+//! Plenty of useful structs and functions for saving and loading previous apecrunch sessions.
+//!
+
 // Copyright (c) 2022 Charles M. Thompson
 //
 // This file is part of ApeCrunch.
@@ -31,23 +34,58 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use uuid::Uuid;
 
+/// Layout of history bincodes when serializing a session.
+///
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HistoryBincode {
-    version: String,
-    session_start: u64,
-    session_uuid: Uuid,
-    decimal_places: u32,
-    entries: Vec<HistoryEntry>,
+    /// ApeCrunch Version in X.X.X format.
+    pub version: String,
+    /// Start of the session, in seconds since unix epoch.
+    pub session_start: u64,
+    /// Session UUID.
+    pub session_uuid: Uuid,
+    /// Decimal places visible when rendering numbers.
+    pub decimal_places: usize,
+    /// Vector containing all of the previous history entries.
+    pub entries: Vec<HistoryEntry>,
 }
 
+impl HistoryBincode {
+    /// Read an lz4_flex-compressed bincode from a slice and return a deserialized HistoryBincode
+    ///
+    pub fn from_slice(slice: &[u8]) -> Result<Self, Box<dyn Error>> {
+        let uncompressed_data = lz4_flex::block::decompress_size_prepended(slice)?;
+
+        return Ok(bincode::deserialize(&uncompressed_data)?);
+    }
+
+    /// Serialize a HistoryBincode into an lz4_flex-compressed bincode, stored in a Vec<u8>
+    ///
+    /// **Note** that hopefully the uncompressed data is less that 4gb. If I'm correct lz4_flex uses a u32 for storing the uncompressed size of data,
+    /// though I doubt this will become a problem unless you leave the same ApeCrunch instance open for a couple thousand years...
+    ///
+    pub fn to_vec(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+        return Ok(lz4_flex::block::compress_prepend_size(&bincode::serialize(
+            &self,
+        )?));
+    }
+}
+
+/// Individual history entry retaining it's UUID, parser tokens, and textual rendition.
+///
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HistoryEntry {
+    /// UUID of the entry.
     entry_uuid: Uuid,
+    /// Parser tokens of the entry, basically the entire expression parsed down into it's most basic form
     expression: Token,
+    /// Rendition of the entry's expression at the time of calculation
     rendition: String,
 }
 
 impl HistoryEntry {
+    /// Creates a new entry struct from parser tokens and the desired amount of decimal places to render.
+    ///
     pub fn new(expression: &Token, decimal_places: usize) -> Self {
         let entry_uuid = Uuid::new_v4();
         return Self {
@@ -56,10 +94,17 @@ impl HistoryEntry {
             rendition: expression.to_string(decimal_places),
         };
     }
+
+    /// Converts the entry to a string.
+    ///
     pub fn to_string(&self) -> String {
         return self.rendition.clone();
     }
 
+    /// Renders the entry without an equal sign, nor everything right of it.
+    ///
+    /// Just returns the expression unmodified if there is no equal sign.
+    ///
     pub fn render_without_equality(&self, decimal_places: usize) -> String {
         if let Token::Equality(left, _right) = &self.expression {
             return left.to_string(decimal_places);
@@ -69,14 +114,21 @@ impl HistoryEntry {
     }
 }
 
+/// Manages history entries, files, and etc.
+///
 #[derive(Debug, Clone, PartialEq)]
 pub struct HistoryManager {
+    /// Path to the history file
     pub file_path: PathBuf,
+    /// Previous entries found in previous sessions
     pub previous_entries: Vec<HistoryEntry>,
+    /// Bincode of current session
     pub history_bincode: HistoryBincode,
 }
 
 impl HistoryManager {
+    /// Creates a new history manager given the current session.
+    ///
     pub fn new(session: &Session) -> Result<Self, Box<dyn Error>> {
         // Regex definitions for correctly identifying files
         lazy_static! {
@@ -86,18 +138,23 @@ impl HistoryManager {
 
         let mut previous_bincodes = Vec::<HistoryBincode>::new();
 
+        // Go through each file in the session's data directory...
         for entry in fs::read_dir(&session.data_dir)? {
             let path = entry?.path().as_path().to_owned();
 
             let file_name = path.to_str().unwrap_or("");
 
+            // And if the file name matches the regex...
             if HISTORY_FILE_RE.is_match(&file_name) {
-                let history_bincode: HistoryBincode = Self::bincode_from_file(path)?;
+                // Load it!
+                let data = fs::read(path)?;
+                let history_bincode = HistoryBincode::from_slice(&data)?;
 
                 previous_bincodes.push(history_bincode);
             }
         }
 
+        // Sort previous entries by session start time
         previous_bincodes.sort_by(|a, b| a.session_start.cmp(&b.session_start));
 
         let mut previous_entries = Vec::<HistoryEntry>::new();
@@ -106,11 +163,12 @@ impl HistoryManager {
             previous_entries.extend_from_slice(&session.entries);
         }
 
+        // Get the start time of the session, along with a fresh session uuid, the version of apecrunch, decimal places, etc. etc...
         let session_start = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
         let session_uuid = Uuid::new_v4();
 
         let version = crate::VERSION;
-        let decimal_places = 12;
+        let decimal_places = session.decimal_places;
 
         let entries = Vec::<HistoryEntry>::new();
 
@@ -118,6 +176,7 @@ impl HistoryManager {
 
         file_path.push(format!("history-{}.bincode.lz4", session_uuid));
 
+        // Should not happen, but in the 2^128 chance that it does...
         if file_path.exists() {
             panic!(
                 "Random file name generation failed! File {} already exists!",
@@ -140,26 +199,24 @@ impl HistoryManager {
         });
     }
 
+    /// Returns a concatination of all previous entries and all current entries.
+    ///
     pub fn get_entries(&self) -> Vec<HistoryEntry> {
         let mut total_entries = self.previous_entries.clone();
         total_entries.extend_from_slice(&self.history_bincode.entries);
         return total_entries;
     }
 
+    /// Add an entry to the current session.
+    ///
     pub fn add_entry(&mut self, history_entry: &HistoryEntry) {
         self.history_bincode.entries.push(history_entry.clone());
     }
 
-    pub fn bincode_from_file(path: PathBuf) -> Result<HistoryBincode, Box<dyn Error>> {
-        let data = lz4_flex::block::decompress_size_prepended(&fs::read(path)?)?;
-
-        return Ok(bincode::deserialize(&data)?);
-    }
-
+    /// Update the history file to reflect the current session
+    ///
     pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
-        // Convert the history bincode struct into an lz4-compressed bincode stored in a vector
-        let data =
-            lz4_flex::block::compress_prepend_size(&bincode::serialize(&self.history_bincode)?);
+        let data = self.history_bincode.to_vec()?;
 
         // Create the file if it doesn't exist yet, clear it, and write the bincode
         let mut file = File::options()
@@ -179,11 +236,13 @@ impl HistoryManager {
 mod tests {
     use super::*;
     use crate::parser;
+    use serial_test::*;
 
     const TWOPTWO: &str = "2 + 2";
 
     // Test the creation of a history manager
     #[test]
+    #[serial]
     fn test_new_history_manager() {
         // create a test session
         let mut session = Session::_new_test();
@@ -206,6 +265,7 @@ mod tests {
 
     // Test adding entries to the entry manager
     #[test]
+    #[serial]
     fn test_add_entry_history_manager() {
         // create a test session
         let mut session = Session::_new_test();
@@ -231,6 +291,7 @@ mod tests {
 
     // Test updating history files
     #[test]
+    #[serial]
     fn test_update_file_history_manager() {
         // create a test session
         let mut session = Session::_new_test();
@@ -253,7 +314,7 @@ mod tests {
         // Check to make sure the bincode was written to correctly
         assert_eq!(
             history_manager.history_bincode.clone(),
-            HistoryManager::bincode_from_file(history_manager.file_path.clone()).unwrap()
+            HistoryBincode::from_slice(&fs::read(history_manager.file_path).unwrap()).unwrap()
         );
 
         // Clean up!
@@ -262,6 +323,7 @@ mod tests {
 
     // Test retrieving history from history files
     #[test]
+    #[serial]
     fn test_retrive_history_files() {
         // create a test session
         let mut session = Session::_new_test();
