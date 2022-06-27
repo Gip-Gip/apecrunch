@@ -1,3 +1,6 @@
+//! Entrypoint into the code!
+//!
+
 // Copyright (c) 2022 Charles M. Thompson
 //
 // This file is part of ApeCrunch.
@@ -15,15 +18,8 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-mod history;
-mod number;
-mod op_engine;
-mod parser;
-mod session;
-mod tui;
-
-use crate::session::Session;
-use crate::tui::*;
+use apecrunch::session::Session;
+use apecrunch::tui::*;
 use clap::Parser;
 use std::io::Write;
 use termcolor::Color;
@@ -32,11 +28,8 @@ use termcolor::ColorSpec;
 use termcolor::StandardStream;
 use termcolor::WriteColor;
 
-/// Version of apecrunch, derived from the Cargo.toml version.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
 /// Command-line arguments, parsed via CLAP.
-/// 
+///
 /// **NOT PUBLIC.**
 #[derive(Parser, Debug)]
 struct Args {
@@ -44,7 +37,8 @@ struct Args {
     print_file_paths: bool,
 }
 
-// Placeholder main function.
+/// Placeholder main function.
+///
 fn main() {
     let mut session = Session::new();
 

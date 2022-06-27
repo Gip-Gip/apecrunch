@@ -20,7 +20,7 @@
 
 use crate::history::HistoryEntry;
 use crate::history::HistoryManager;
-use crate::Session;
+use crate::session::Session;
 use cursive::view::Nameable;
 use cursive::view::Selector;
 use cursive::views::LinearLayout;

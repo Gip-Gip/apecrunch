@@ -2,17 +2,23 @@
 name = "apecrunch"
 version = "0.0.1"
 edition = "2021"
+license = "GPL-3.0-only"
+description = "A SpeedCrunch inspired TUI calculator, for apes..."
+keywords = ["SpeedCrunch", "calculator", "tui", "math", "cli"]
+catagories = ["command-line-utilities", "science", "mathematics"]
+repository = "https://github.com/Gip-Gip/apecrunch"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cursive = { version = "0.18.0", features = [ "toml", "crossterm-backend" ] }    # TUI
+cursive = { version = "0.18.0", features = ["toml", "crossterm-backend"] }      # TUI
 simple-error = "0.2.3"                                                          # Simple error creation
-fraction = { version = "0.11.0", features = [ "with-serde-support" ] }          # Fractional numbers
+fraction = { version = "0.11.0", features = ["with-serde-support"] }            # Fractional numbers
 lazy_static = "1.4.0"                                                           # Caching regex compilations
 regex = "1.5.6"                                                                 # Regex for various uses
 serde = {version = "1.0.137", features = ["derive"] }                           # Serialization tool
-uuid = { version = "1.1.2", features = [ "v4" , "serde" ] }                     # UUID generation
+uuid = { version = "1.1.2", features = ["v4" , "serde"] }                       # UUID generation
 lz4_flex = "0.9.3"                                                              # Fast data compression
 directories = "4.0.1"                                                           # Used to grab the default config/data directories per OS
 toml = "0.5.9"                                                                  # Toml Serialization

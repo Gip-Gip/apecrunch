@@ -83,12 +83,8 @@ impl Token {
             Token::ParenthesisNeg(expression) => {
                 format!("-( {} )", expression.to_string(prec))
             }
-            Token::Number(number) => {
-                number.to_string(prec)
-            }
-            Token::Boolean(boolean) => {
-                boolean.to_string()
-            }
+            Token::Number(number) => number.to_string(prec),
+            Token::Boolean(boolean) => boolean.to_string(),
         }
     }
 }

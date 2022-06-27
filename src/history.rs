@@ -19,7 +19,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::parser::Token;
-use crate::Session;
+use crate::session::Session;
 use bincode;
 use lazy_static::*;
 use regex::Regex;
