@@ -9,10 +9,13 @@
  - [ ] Add good exponents
  - [ ] Add good roots
  - [ ] Add dedicated square root function
+ - [ ] Add ability to retrieve the answers of previous expressions
+ - [ ] Add built in functions like sin, cos, tan, etc.
+ - [ ] Make README pretty
 
 ## **Changelog:**
 
-### **Version 0.0.1 *in progress***
+### **Version 0.0.1**
 
  - [x] **Added fractional numbers** *(commit eba06ee)*
  - [x] **Added exponents** *(commit c84bc01)*
