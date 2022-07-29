@@ -11,10 +11,12 @@
  - [ ] Add dedicated square root function
  - [ ] Add ability to retrieve the answers of previous expressions
  - [ ] Add built in functions like sin, cos, tan, etc.
- - [ ] Fix order of operations(negative comes before exponent)
  - [ ] Make README pretty
 
 ## **Changelog:**
+
+### **Version 0.0.2**
+- [X] **Fixed order of operation** *(commit 2e31175)*
 
 ### **Version 0.0.1**
 
