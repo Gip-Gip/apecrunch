@@ -11,12 +11,13 @@
  - [ ] Add dedicated square root function
  - [ ] Add ability to retrieve the answers of previous expressions
  - [ ] Add built in functions like sin, cos, tan, etc.
- - [ ] Add check to make sure that history versions aren't incompatible
  - [ ] Make README pretty
 
 ## **Changelog:**
 
 ### **Version 0.0.2**
+- [X] **Added history file version check** *(commit 8ab539d)*
+- [X] **Fixed crash when reading corrupt/incompatible history files** *(commit 8ab539d)*
 - [X] **Fixed order of operation** *(commit 2e31175)*
 
 ### **Version 0.0.1**
