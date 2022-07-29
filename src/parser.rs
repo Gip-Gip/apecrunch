@@ -46,8 +46,6 @@ pub enum Token {
     Equality(Box<Token>, Box<Token>),
     /// Parenthesis token, parsed from "()".
     Parenthesis(Box<Token>),
-    /// Negative parethesis token, parsed from "-()".
-    ParenthesisNeg(Box<Token>),
     /// Number token, parsed from any number 0-9.
     Number(Number),
     /// Negative token, parsed from any negative sign
@@ -81,9 +79,6 @@ impl Token {
             }
             Token::Parenthesis(expression) => {
                 format!("( {} )", expression.to_string(prec))
-            }
-            Token::ParenthesisNeg(expression) => {
-                format!("-( {} )", expression.to_string(prec))
             }
             Token::Number(number) => number.to_string(prec),
             Token::Negative(expression) => {
