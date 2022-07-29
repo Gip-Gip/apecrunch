@@ -71,3 +71,35 @@ fn main() {
 
     tui.run();
 }
+
+
+// Test general user things
+#[cfg(test)]
+mod tests {
+    use apecrunch::parser;
+    use apecrunch::op_engine;
+
+    #[test]
+    fn test_two_plus_two() {
+        let user_string = "2+2";
+        let expected_result = "2 + 2 = 4";
+
+        let tokens = parser::parse_str(user_string).unwrap();
+
+        let result = op_engine::get_equality(&tokens);
+
+        assert_eq!(result.to_string(0), expected_result);
+    }
+
+    #[test]
+    fn test_order_of_ops() {
+        let user_string = "1+2*3-4/-5^(6+7)";
+        let expected_result = "1 + 2 * 3 - 4 / -5^( 6 + 7 ) = 7.0000000032768";
+
+        let tokens = parser::parse_str(user_string).unwrap();
+
+        let result = op_engine::get_equality(&tokens);
+
+        assert_eq!(result.to_string(13), expected_result);
+    }
+}

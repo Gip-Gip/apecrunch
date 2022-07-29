@@ -123,6 +123,16 @@ pub fn simplify(tokens: &Token) -> Token {
 
         Token::Number(number) => Token::Number(number.clone()),
 
+        Token::Negative(expression) => {
+            let result = simplify(expression);
+
+            if let Token::Number(number) = &result {
+                return Token::Number(number.negative())
+            }
+
+            Token::Negative(Box::new(result))
+        }
+
         // It is entirely possible I am still a terrible programmer and somehow I haven't implemented all of the tokens...
         _ => {
             panic!("Fatal Oopsiedaisies!\n\n\tExpression parsed but the op-engine is not able to simplify on it! {}", tokens.to_string(session::DEFAULT_DECIMAL_PLACES));

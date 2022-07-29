@@ -50,6 +50,8 @@ pub enum Token {
     ParenthesisNeg(Box<Token>),
     /// Number token, parsed from any number 0-9.
     Number(Number),
+    /// Negative token, parsed from any negative sign
+    Negative(Box<Token>),
     /// Boolean token, not currently parsed but can be returned from simplify functions.
     Boolean(bool),
 }
@@ -84,6 +86,9 @@ impl Token {
                 format!("-( {} )", expression.to_string(prec))
             }
             Token::Number(number) => number.to_string(prec),
+            Token::Negative(expression) => {
+                format!("-{}", expression.to_string(prec))
+            }
             Token::Boolean(boolean) => boolean.to_string(),
         }
     }
@@ -93,18 +98,32 @@ impl Token {
 ///
 /// **NOT PUBLIC.**
 ///
-const ORDER_OF_OPS: [&str; 6] = ["=", "-", "+", "/", "*", "^"];
+const ORDER_OF_OPS: [&str; 7] = ["=", "-", "+", "/", "*", NEG_SYMBOL, "^"];
+
+/// Internal symbol for -1, for parser uses only
+/// 
+/// **NOT PUBLIC.**
+/// 
+const NEG_SYMBOL: &str = "\x26";
 
 /// Strips a string of whitespace, makes sure it's not empty, and runs the string through parse()!
 ///
 /// Throws a simple error if the expression is empty.
 ///
 pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
-    let cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();
+
+    // Regex definitions n stuff
+    lazy_static! {
+        static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
+    }
+
+    let mut cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();
 
     if cleaned_string.len() == 0 {
         bail!("Empty Expression!");
     }
+
+    cleaned_string = NEGATIVE_RE.replace_all(&cleaned_string, format!("$a{}", NEG_SYMBOL)).to_string();
 
     Ok(parse(&cleaned_string)?)
 }
@@ -118,32 +137,23 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
 /// **NOT PUBLIC. USE parse_str() INSTEAD.**
 ///
 fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
-    // Regex definitions for various parsing uses.
-    lazy_static! {
-        static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
-    }
-
-    let neg_indicies = NEGATIVE_RE.find_iter(string);
-    let working_string = &NEGATIVE_RE.replace_all(string.clone(), "$a");
 
     for opcode in ORDER_OF_OPS {
         // If so...
-        let op_index = match_outside_parenthesis(working_string, opcode)?;
+        let op_index = match_outside_parenthesis(string, opcode)?;
 
         if op_index.is_some() {
             // Split the string at the operator...
-            let mut splitpoint = op_index.unwrap();
+            let splitpoint = op_index.unwrap();
 
-            // Make up for any removed characters in the string.
-            for i in neg_indicies {
-                if splitpoint > i.start() {
-                    splitpoint += 1;
-                }
+            // If there is nothing to the left or right of the operator, produce an error(unless the operator is the negative sign)...
+            if splitpoint + 1 == string.len() || (splitpoint == 0 && opcode != NEG_SYMBOL) {
+                bail!("Incomplete Expression: {}", string);
             }
 
-            // If there is nothing to the left or right of the operator, produce an error...
-            if splitpoint + 1 == string.len() || splitpoint == 0 {
-                bail!("Incomplete Expression: {}", string);
+            // Furthermore, if there is anything left of the negative sign more parsing needs to be done...
+            if splitpoint != 0 && opcode == NEG_SYMBOL {
+                continue;
             }
 
             // Separate the string into a left and right side...
@@ -172,6 +182,7 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
                 )),
+                NEG_SYMBOL => Ok(Token::Negative(Box::new(parse(&right)?))),
                 "=" => Ok(Token::Equality(
                     Box::new(parse(&left)?),
                     Box::new(parse(&right)?),
@@ -188,18 +199,12 @@ fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
     //
 
     // If the string is a number...
-    if working_string.chars().next().unwrap().is_numeric() {
+    if string.chars().next().unwrap().is_numeric() {
         return Ok(Token::Number(Number::from_str(string)?));
     }
 
     // If the string is an expression surrounded in parenthesis...
-    if working_string.chars().next().unwrap() == '(' {
-        if NEGATIVE_RE.is_match(string) {
-            return Ok(Token::ParenthesisNeg(Box::new(parse(
-                &string[2..string.len() - 1],
-            )?)));
-        }
-
+    if string.chars().next().unwrap() == '(' {
         return Ok(Token::Parenthesis(Box::new(parse(
             &string[1..string.len() - 1],
         )?)));

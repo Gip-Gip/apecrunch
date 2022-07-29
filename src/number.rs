@@ -68,6 +68,14 @@ impl Number {
         base_str
     }
 
+    /// Makes this number negative
+    /// 
+    pub fn negative(&self) -> Number {
+        Number {
+            fraction: &self.fraction * &Self::neg_one().fraction,
+        }
+    }
+
     /// Adds this number to another number.
     ///
     pub fn add(&self, other: &Number) -> Number {
