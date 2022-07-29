@@ -72,12 +72,11 @@ fn main() {
     tui.run();
 }
 
-
 // Test general user things
 #[cfg(test)]
 mod tests {
-    use apecrunch::parser;
     use apecrunch::op_engine;
+    use apecrunch::parser;
 
     #[test]
     fn test_two_plus_two() {

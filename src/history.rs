@@ -34,6 +34,10 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use uuid::Uuid;
 
+/// Versions of history files that this version of apecrunch is compatible with
+///
+pub const COMPAT_VERS: [&str; 1] = ["0.0.2"];
+
 /// Layout of history bincodes when serializing a session.
 ///
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -148,10 +152,27 @@ impl HistoryManager {
             // And if the file name matches the regex...
             if HISTORY_FILE_RE.is_match(&file_name) {
                 // Load it!
-                let data = fs::read(path)?;
-                let history_bincode = HistoryBincode::from_slice(&data)?;
+                let data = fs::read(&path)?;
+                let history_bincode = match HistoryBincode::from_slice(&data) {
+                    Ok(bincode) => bincode,
+                    Err(_e) => {
+                        // If our history file can't be serialized, print an error and move on...
+                        eprintln!(
+                            "History file {} corrupt or incompatible, not loading...",
+                            file_name
+                        );
+                        continue;
+                    }
+                };
 
-                previous_bincodes.push(history_bincode);
+                // If our bincode version is compatible...
+                if COMPAT_VERS.contains(&history_bincode.version.as_str()) {
+                    previous_bincodes.push(history_bincode);
+                }
+                // Otherwise print an error...
+                else {
+                    eprintln!("History file version \"{}\" incompatible with apecrunch version {}, not loading...", history_bincode.version, crate::VERSION);
+                }
             }
         }
 

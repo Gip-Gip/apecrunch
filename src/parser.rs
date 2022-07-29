@@ -96,9 +96,9 @@ impl Token {
 const ORDER_OF_OPS: [&str; 7] = ["=", "-", "+", "/", "*", NEG_SYMBOL, "^"];
 
 /// Internal symbol for -1, for parser uses only
-/// 
+///
 /// **NOT PUBLIC.**
-/// 
+///
 const NEG_SYMBOL: &str = "\x26";
 
 /// Strips a string of whitespace, makes sure it's not empty, and runs the string through parse()!
@@ -106,7 +106,6 @@ const NEG_SYMBOL: &str = "\x26";
 /// Throws a simple error if the expression is empty.
 ///
 pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
-
     // Regex definitions n stuff
     lazy_static! {
         static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
@@ -118,7 +117,9 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
         bail!("Empty Expression!");
     }
 
-    cleaned_string = NEGATIVE_RE.replace_all(&cleaned_string, format!("$a{}", NEG_SYMBOL)).to_string();
+    cleaned_string = NEGATIVE_RE
+        .replace_all(&cleaned_string, format!("$a{}", NEG_SYMBOL))
+        .to_string();
 
     Ok(parse(&cleaned_string)?)
 }
@@ -132,7 +133,6 @@ pub fn parse_str(string: &str) -> Result<Token, Box<dyn Error>> {
 /// **NOT PUBLIC. USE parse_str() INSTEAD.**
 ///
 fn parse(string: &str) -> Result<Token, Box<dyn Error>> {
-
     for opcode in ORDER_OF_OPS {
         // If so...
         let op_index = match_outside_parenthesis(string, opcode)?;

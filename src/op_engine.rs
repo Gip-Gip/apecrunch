@@ -118,7 +118,7 @@ pub fn simplify(tokens: &Token) -> Token {
             let result = simplify(expression);
 
             if let Token::Number(number) = &result {
-                return Token::Number(number.negative())
+                return Token::Number(number.negative());
             }
 
             Token::Negative(Box::new(result))

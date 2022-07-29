@@ -69,7 +69,7 @@ impl Number {
     }
 
     /// Makes this number negative
-    /// 
+    ///
     pub fn negative(&self) -> Number {
         Number {
             fraction: &self.fraction * &Self::neg_one().fraction,
