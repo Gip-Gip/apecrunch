@@ -11,6 +11,7 @@
  - [ ] Add dedicated square root function
  - [ ] Add ability to retrieve the answers of previous expressions
  - [ ] Add built in functions like sin, cos, tan, etc.
+ - [ ] Add check to make sure that history versions aren't incompatible
  - [ ] Make README pretty
 
 ## **Changelog:**
