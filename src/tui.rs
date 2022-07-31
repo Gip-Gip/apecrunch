@@ -72,7 +72,7 @@ impl Tui {
     ///
     /// Returns an error if there is one.
     ///
-    pub fn new(session: Session) -> Result<Self, Box<dyn Error>> {
+    pub fn new(mut session: Session) -> Result<Self, Box<dyn Error>> {
         // Create a new Cursive instance.
         let cursive = Cursive::new();
 
@@ -82,7 +82,7 @@ impl Tui {
 
         let cache = TuiCache {
             entry_bar_cursor_pos: 0,
-            history_manager: HistoryManager::new(&session)?,
+            history_manager: HistoryManager::new(&mut session)?,
             session: session,
         };
 
@@ -240,7 +240,7 @@ impl Tui {
         cache.history_manager.add_entry(&entry);
         history.add_item(entry.to_string(), index);
 
-        if let Result::Err(error) = cache.history_manager.update_file() {
+        if let Result::Err(error) = cache.history_manager.update_file(&cache.session) {
             Self::nonfatal_error_dialog(cursive, error);
             return;
         }

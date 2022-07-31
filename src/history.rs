@@ -20,6 +20,7 @@
 
 use crate::parser::Token;
 use crate::session::Session;
+use crate::variable::VarTable;
 use bincode;
 use lazy_static::*;
 use regex::Regex;
@@ -50,6 +51,8 @@ pub struct HistoryBincode {
     pub session_uuid: Uuid,
     /// Decimal places visible when rendering numbers.
     pub decimal_places: usize,
+    /// Session VarTable, all of the variables stored in the session
+    pub session_vartable: VarTable,
     /// Vector containing all of the previous history entries.
     pub entries: Vec<HistoryEntry>,
 }
@@ -134,7 +137,7 @@ pub struct HistoryManager {
 impl HistoryManager {
     /// Creates a new history manager given the current session.
     ///
-    pub fn new(session: &Session) -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: &mut Session) -> Result<Self, Box<dyn Error>> {
         // Regex definitions for correctly identifying files
         lazy_static! {
             static ref HISTORY_FILE_RE: Regex =
@@ -181,8 +184,12 @@ impl HistoryManager {
 
         let mut previous_entries = Vec::<HistoryEntry>::new();
 
-        for session in previous_bincodes {
-            previous_entries.extend_from_slice(&session.entries);
+        // Load all previous session calculations and variables
+        for bincode in previous_bincodes {
+            // Merge previous variable declarations into the current session
+            session.vartable.merge(&bincode.session_vartable)?;
+            // Add previous calculation entry
+            previous_entries.extend_from_slice(&bincode.entries);
         }
 
         // Get the start time of the session, along with a fresh session uuid, the version of apecrunch, decimal places, etc. etc...
@@ -211,6 +218,7 @@ impl HistoryManager {
             session_start: session_start,
             session_uuid: session_uuid,
             decimal_places: decimal_places,
+            session_vartable: session.vartable.clone(),
             entries: entries,
         };
 
@@ -238,7 +246,10 @@ impl HistoryManager {
 
     /// Update the history file to reflect the current session
     ///
-    pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn update_file(&mut self, session: &Session) -> Result<(), Box<dyn Error>> {
+        // Update the session data
+        self.history_bincode.session_vartable = session.vartable.clone();
+
         let data = self.history_bincode.to_vec()?;
 
         // Create the file if it doesn't exist yet, clear it, and write the bincode
@@ -273,7 +284,7 @@ mod tests {
 
         session.init().unwrap();
 
-        let history_manager = HistoryManager::new(&session).unwrap();
+        let history_manager = HistoryManager::new(&mut session).unwrap();
 
         // File should not exist yet!
         assert!(!&history_manager.file_path.exists());
@@ -297,7 +308,7 @@ mod tests {
 
         session.init().unwrap();
 
-        let mut history_manager = HistoryManager::new(&session).unwrap();
+        let mut history_manager = HistoryManager::new(&mut session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
@@ -324,7 +335,7 @@ mod tests {
 
         session.init().unwrap();
 
-        let mut history_manager = HistoryManager::new(&session).unwrap();
+        let mut history_manager = HistoryManager::new(&mut session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
@@ -332,7 +343,7 @@ mod tests {
 
         history_manager.add_entry(&history_entry);
 
-        history_manager.update_file().unwrap();
+        history_manager.update_file(&session).unwrap();
 
         // File should now exist!
         assert!(&history_manager.file_path.exists());
@@ -357,7 +368,7 @@ mod tests {
 
         session.init().unwrap();
 
-        let mut history_manager1 = HistoryManager::new(&session).unwrap();
+        let mut history_manager1 = HistoryManager::new(&mut session).unwrap();
 
         let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
@@ -365,9 +376,9 @@ mod tests {
 
         history_manager1.add_entry(&history_entry);
 
-        history_manager1.update_file().unwrap();
+        history_manager1.update_file(&session).unwrap();
 
-        let history_manager2 = HistoryManager::new(&session).unwrap();
+        let history_manager2 = HistoryManager::new(&mut session).unwrap();
 
         // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
         assert_eq!(

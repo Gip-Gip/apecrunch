@@ -60,6 +60,16 @@ impl VarTable {
         }
     }
 
+    /// Merge with another vartable, overwriting all existing variables with ones found in the other vartable
+    ///
+    pub fn merge(&mut self, vartable: &VarTable) -> Result<(), Box<dyn Error>> {
+        for variable in &vartable.variables {
+            self.store(variable.to_owned())?;
+        }
+
+        Ok(())
+    }
+
     /// Add a variable to the VarTable, fail if the variable exists
     ///
     pub fn add(&mut self, var: Variable) -> Result<(), Box<dyn Error>> {
