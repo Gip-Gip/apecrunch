@@ -28,11 +28,11 @@ use termcolor::ColorSpec;
 use termcolor::StandardStream;
 use termcolor::WriteColor;
 
-/// Command-line arguments, parsed via CLAP.
-///
-/// **NOT PUBLIC.**
+// Command line arguments parsed through clap
 #[derive(Parser, Debug)]
+#[clap(author, version, about)]
 struct Args {
+    /// Print paths to the config and session/history files
     #[clap(short, long)]
     print_file_paths: bool,
 }
