@@ -146,6 +146,11 @@ pub fn parse_str(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn
 /// **NOT PUBLIC. USE parse_str() INSTEAD.**
 ///
 fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+    // Regex definitions n stuff
+    lazy_static! {
+        static ref VAR_NAMECHECK_RE: Regex = Regex::new(r"[=\-\+/\*\^>\u0026]").unwrap(); // Used to see if a variable name is valid; it shouldn't contain any operators
+    }
+
     for opcode in ORDER_OF_OPS {
         // If so...
         let op_index = match_outside_parenthesis(string, opcode)?;
@@ -195,7 +200,14 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
                     Box::new(parse(&left, vartable)?),
                     Box::new(parse(&right, vartable)?),
                 )),
-                "->" => Ok(Token::Store(right, Box::new(parse(&left, vartable)?))),
+                "->" => {
+                    // Make sure the variable doesn't contain any operators
+                    if VAR_NAMECHECK_RE.is_match(&right) {
+                        bail!("Invalid variable name {}!", right);
+                    }
+
+                    Ok(Token::Store(right, Box::new(parse(&left, vartable)?)))
+                }
                 // It is entrely possible I am a terrible programmer and I forgot to implement all the operators in the ORDER_OF_OPS table...
                 _ => {
                     panic!("\n\nFatal Oopsiedaisies!\n\n\tOperator found in table but no code to handle it: {}\n\n", opcode);
@@ -341,6 +353,18 @@ mod tests {
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
+    }
+
+    // Test to make sure the parser can reject bad variable names
+    #[test]
+    fn test_parser_var_name_check() {
+        let mut vartable = VarTable::new();
+
+        for opcode in ORDER_OF_OPS {
+            let bad_variable: String = format!("2->foo{}bar", opcode);
+
+            parse_str(&bad_variable, &mut vartable).unwrap_err();
+        }
     }
 
     // Test to make sure the parser can recognize add operations
