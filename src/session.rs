@@ -18,6 +18,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::variable::VarTable;
 use directories::ProjectDirs;
 use serde::Deserialize;
 use serde::Serialize;
@@ -46,6 +47,8 @@ pub struct Session {
     pub data_dir: PathBuf,
     /// Number of decimal places to render.
     pub decimal_places: usize,
+    /// Variables stored in the session
+    pub vartable: VarTable,
 }
 
 impl Session {
@@ -64,6 +67,7 @@ impl Session {
             config_dir: dirs.config_dir().to_owned(),
             data_dir: dirs.data_dir().to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
+            vartable: VarTable::new(),
         }
     }
 
@@ -76,6 +80,7 @@ impl Session {
             config_dir: Path::new("test/config").to_owned(),
             data_dir: Path::new("test/data").to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
+            vartable: VarTable::new(),
         }
     }
 

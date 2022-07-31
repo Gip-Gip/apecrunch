@@ -259,6 +259,7 @@ impl HistoryManager {
 mod tests {
     use super::*;
     use crate::parser;
+    use crate::variable::VarTable;
     use serial_test::*;
 
     const TWOPTWO: &str = "2 + 2";
@@ -291,13 +292,14 @@ mod tests {
     #[serial]
     fn test_add_entry_history_manager() {
         // create a test session
+        let mut vartable = VarTable::new();
         let mut session = Session::_new_test();
 
         session.init().unwrap();
 
         let mut history_manager = HistoryManager::new(&session).unwrap();
 
-        let expression = parser::parse_str(TWOPTWO).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
@@ -318,12 +320,13 @@ mod tests {
     fn test_update_file_history_manager() {
         // create a test session
         let mut session = Session::_new_test();
+        let mut vartable = VarTable::new();
 
         session.init().unwrap();
 
         let mut history_manager = HistoryManager::new(&session).unwrap();
 
-        let expression = parser::parse_str(TWOPTWO).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
@@ -350,12 +353,13 @@ mod tests {
     fn test_retrive_history_files() {
         // create a test session
         let mut session = Session::_new_test();
+        let mut vartable = VarTable::new();
 
         session.init().unwrap();
 
         let mut history_manager1 = HistoryManager::new(&session).unwrap();
 
-        let expression = parser::parse_str(TWOPTWO).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 

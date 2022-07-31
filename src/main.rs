@@ -77,13 +77,15 @@ fn main() {
 mod tests {
     use apecrunch::op_engine;
     use apecrunch::parser;
+    use apecrunch::variable::VarTable;
 
     #[test]
     fn test_two_plus_two() {
         let user_string = "2+2";
         let expected_result = "2 + 2 = 4";
+        let mut vartable = VarTable::new();
 
-        let tokens = parser::parse_str(user_string).unwrap();
+        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
 
         let result = op_engine::get_equality(&tokens);
 
@@ -94,8 +96,9 @@ mod tests {
     fn test_order_of_ops() {
         let user_string = "1+2*3-4/-5^(6+7)";
         let expected_result = "1 + 2 * 3 - 4 / -5^( 6 + 7 ) = 7.0000000032768";
+        let mut vartable = VarTable::new();
 
-        let tokens = parser::parse_str(user_string).unwrap();
+        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
 
         let result = op_engine::get_equality(&tokens);
 

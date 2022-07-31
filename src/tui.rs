@@ -217,7 +217,7 @@ impl Tui {
         //
 
         // parse the text in the entry box
-        let tokens = match parser::parse_str(text) {
+        let tokens = match parser::parse_str(text, &mut cache.session.vartable) {
             Ok(tokens) => tokens,
             Err(error) => {
                 Self::nonfatal_error_dialog(cursive, error);

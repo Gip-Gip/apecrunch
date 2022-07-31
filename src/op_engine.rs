@@ -135,6 +135,7 @@ pub fn simplify(tokens: &Token) -> Token {
 mod tests {
     use super::*;
     use crate::parser;
+    use crate::variable::VarTable;
 
     const TWO: &str = "2";
     const TWOPTWO: &str = "2 + 2";
@@ -154,7 +155,8 @@ mod tests {
     // Test basic single number expression operation
     #[test]
     fn test_op_engine_sneo() {
-        let tokenized_expression = parser::parse_str(TWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -167,7 +169,8 @@ mod tests {
     // Test addition
     #[test]
     fn test_op_engine_add() {
-        let tokenized_expression = parser::parse_str(TWOPTWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -180,7 +183,8 @@ mod tests {
     // Test subtraction
     #[test]
     fn test_op_engine_sub() {
-        let tokenized_expression = parser::parse_str(TWOSTWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOSTWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -193,7 +197,8 @@ mod tests {
     // Test multiplication
     #[test]
     fn test_op_engine_mul() {
-        let tokenized_expression = parser::parse_str(TWOMTWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOMTWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -206,7 +211,8 @@ mod tests {
     // Test division
     #[test]
     fn test_op_engine_div() {
-        let tokenized_expression = parser::parse_str(TWODTWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWODTWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -219,7 +225,8 @@ mod tests {
     // Test exponentation
     #[test]
     fn test_op_engine_exp() {
-        let tokenized_expression = parser::parse_str(TWOETWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOETWO, &mut vartable).unwrap();
 
         if let Token::Number(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
@@ -232,7 +239,8 @@ mod tests {
     // Test equality
     #[test]
     fn test_op_engine_eql() {
-        let tokenized_expression = parser::parse_str(TWOQTWO).unwrap();
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOQTWO, &mut vartable).unwrap();
 
         if let Token::Boolean(num) = simplify(&tokenized_expression) {
             // Assert that the right of the operation is what we expect
