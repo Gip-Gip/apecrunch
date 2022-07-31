@@ -226,7 +226,14 @@ impl Tui {
         };
 
         // Go through the tokens an operate on them, getting an equality.
-        let result = op_engine::get_equality(&tokens);
+        let result = match op_engine::get_equality(&tokens, &mut cache.session.vartable) {
+            Ok(result) => result,
+            Err(error) => {
+                Self::nonfatal_error_dialog(cursive, error);
+                return;
+            }
+        };
+
         let entry = &HistoryEntry::new(&result, cache.session.decimal_places);
         let index = cache.history_manager.get_entries().len();
 

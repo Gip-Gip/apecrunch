@@ -19,114 +19,136 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::parser::Token;
-use crate::session;
+use crate::variable::VarTable;
+use crate::variable::Variable;
+use std::error::Error;
 
 /// Simplifies the given parser tokens and asserts they are equal to the unsimplified parser tokens, returning both in an equality token.alloc
 ///
 /// For example, 2+2 would be equal to 4.
 ///
-pub fn get_equality(tokens: &Token) -> Token {
-    Token::Equality(Box::new(tokens.clone()), Box::new(simplify(tokens)))
+pub fn get_equality(tokens: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+    Ok(Token::Equality(
+        Box::new(tokens.clone()),
+        Box::new(simplify(tokens, vartable)?),
+    ))
 }
 
 /// Recursively simplifies an expression, performing various operations like multiplication, division, etc. etc.
 ///
 /// For example, 2+2 would simplify into 4.
 ///
-pub fn simplify(tokens: &Token) -> Token {
-    match tokens {
+pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+    match token {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {
-            let left_result = simplify(left); // Recursively simplify the left side.
-            let right_result = simplify(right); // Recursively simplify the right side.
+            let left_result = simplify(left, vartable)?; // Recursively simplify the left side.
+            let right_result = simplify(right, vartable)?; // Recursively simplify the right side.
 
             // If both sides are numbers, operate on them and return a number token.
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.multiply(&right_number)); // In this case we multiply the two.
+                    return Ok(Token::Number(left_number.multiply(&right_number)));
+                    // In this case we multiply the two.
                 }
             }
 
             // Otherwise it cannot be further simplified, and we must return a multiply token.
-            Token::Multiply(Box::new(left_result), Box::new(right_result))
+            Ok(Token::Multiply(
+                Box::new(left_result),
+                Box::new(right_result),
+            ))
         }
 
         Token::Divide(left, right) => {
-            let left_result = simplify(left);
-            let right_result = simplify(right);
+            let left_result = simplify(left, vartable)?;
+            let right_result = simplify(right, vartable)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.divide(&right_number));
+                    return Ok(Token::Number(left_number.divide(&right_number)));
                 }
             }
 
-            Token::Divide(Box::new(left_result), Box::new(right_result))
+            Ok(Token::Divide(Box::new(left_result), Box::new(right_result)))
         }
 
         Token::Add(left, right) => {
-            let left_result = simplify(left);
-            let right_result = simplify(right);
+            let left_result = simplify(left, vartable)?;
+            let right_result = simplify(right, vartable)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.add(&right_number));
+                    return Ok(Token::Number(left_number.add(&right_number)));
                 }
             }
 
-            Token::Add(Box::new(left_result), Box::new(right_result))
+            Ok(Token::Add(Box::new(left_result), Box::new(right_result)))
         }
 
         Token::Subtract(left, right) => {
-            let left_result = simplify(left);
-            let right_result = simplify(right);
+            let left_result = simplify(left, vartable)?;
+            let right_result = simplify(right, vartable)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.subtract(&right_number));
+                    return Ok(Token::Number(left_number.subtract(&right_number)));
                 }
             }
 
-            Token::Subtract(Box::new(left_result), Box::new(right_result))
+            Ok(Token::Subtract(
+                Box::new(left_result),
+                Box::new(right_result),
+            ))
         }
 
         Token::Exponent(left, right) => {
-            let left_result = simplify(left);
-            let right_result = simplify(right);
+            let left_result = simplify(left, vartable)?;
+            let right_result = simplify(right, vartable)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Token::Number(left_number.exponent(&right_number));
+                    return Ok(Token::Number(left_number.exponent(&right_number)));
                 }
             }
 
-            Token::Exponent(Box::new(left_result), Box::new(right_result))
+            Ok(Token::Exponent(
+                Box::new(left_result),
+                Box::new(right_result),
+            ))
         }
 
         Token::Equality(left, right) => {
-            let left_result = simplify(left);
-            let right_result = simplify(right);
+            let left_result = simplify(left, vartable)?;
+            let right_result = simplify(right, vartable)?;
 
-            Token::Boolean(left_result == right_result)
+            Ok(Token::Boolean(left_result == right_result))
         }
 
-        Token::Parenthesis(expression) => simplify(expression),
+        Token::Parenthesis(expression) => simplify(expression, vartable),
 
-        Token::Number(number) => Token::Number(number.clone()),
+        Token::Number(_number) => Ok(token.clone()),
+
+        Token::Boolean(_truth) => Ok(token.clone()),
+
+        Token::Variable(variable) => Ok(variable.tokens.clone()),
 
         Token::Negative(expression) => {
-            let result = simplify(expression);
+            let result = simplify(expression, vartable)?;
 
             if let Token::Number(number) = &result {
-                return Token::Number(number.negative());
+                return Ok(Token::Number(number.negative()));
             }
 
-            Token::Negative(Box::new(result))
+            Ok(Token::Negative(Box::new(result)))
         }
 
-        // It is entirely possible I am still a terrible programmer and somehow I haven't implemented all of the tokens...
-        _ => {
-            panic!("Fatal Oopsiedaisies!\n\n\tExpression parsed but the op-engine is not able to simplify on it! {}", tokens.to_string(session::DEFAULT_DECIMAL_PLACES));
+        Token::Store(id, tokens) => {
+            let simplified_tokens = simplify(tokens, vartable)?;
+            let variable = Variable::new(id, simplified_tokens.clone());
+            vartable.store(variable)?;
+
+            Ok(simplified_tokens)
         }
     }
 }
@@ -144,6 +166,8 @@ mod tests {
     const TWODTWO: &str = "2 / 2";
     const TWOETWO: &str = "2^2";
     const TWOQTWO: &str = "2 = 2";
+    const TWOSTORE: &str = "2 -> x";
+    const TWORET: &str = "x";
 
     const TWOPTWO_R: &str = "4";
     const TWOSTWO_R: &str = "0";
@@ -151,6 +175,8 @@ mod tests {
     const TWODTWO_R: &str = "1";
     const TWOETWO_R: &str = "4";
     const TWOQTWO_R: &str = "true";
+    const TWOSTORE_R: &str = "2";
+    const TWORET_R: &str = "2";
 
     // Test basic single number expression operation
     #[test]
@@ -158,7 +184,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWO);
         } else {
@@ -172,7 +198,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOPTWO_R);
         } else {
@@ -186,7 +212,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOSTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOSTWO_R);
         } else {
@@ -200,7 +226,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOMTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOMTWO_R);
         } else {
@@ -214,7 +240,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWODTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWODTWO_R);
         } else {
@@ -228,7 +254,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOETWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression) {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOETWO_R);
         } else {
@@ -242,9 +268,32 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOQTWO, &mut vartable).unwrap();
 
-        if let Token::Boolean(num) = simplify(&tokenized_expression) {
+        if let Token::Boolean(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOQTWO_R);
+        } else {
+            panic!("Didn't return number token!");
+        }
+    }
+
+    // Test storing
+    #[test]
+    fn test_op_engine_store_retrieve() {
+        let mut vartable = VarTable::new();
+        let tokenized_expression = parser::parse_str(TWOSTORE, &mut vartable).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(6), TWOSTORE_R);
+        } else {
+            panic!("Didn't return number token!");
+        }
+
+        let tokenized_expression = parser::parse_str(TWORET, &mut vartable).unwrap();
+
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+            // Assert that the right of the operation is what we expect
+            assert_eq!(num.to_string(6), TWORET_R);
         } else {
             panic!("Didn't return number token!");
         }

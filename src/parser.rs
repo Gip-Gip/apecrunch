@@ -56,6 +56,8 @@ pub enum Token {
     Negative(Box<Token>),
     /// Boolean token, not currently parsed but can be returned from simplify functions.
     Boolean(bool),
+    /// Store token, used to store values into variables. First string is the id of the variable, second are the tokens to be stored in the variable
+    Store(String, Box<Token>),
 }
 
 impl Token {
@@ -92,6 +94,9 @@ impl Token {
                 format!("{}", variable.id)
             }
             Token::Boolean(boolean) => boolean.to_string(),
+            Token::Store(id, expression) => {
+                format!("{} -> {}", expression.to_string(prec), id)
+            }
         }
     }
 }
@@ -100,7 +105,7 @@ impl Token {
 ///
 /// **NOT PUBLIC.**
 ///
-const ORDER_OF_OPS: [&str; 7] = ["=", "-", "+", "/", "*", NEG_SYMBOL, "^"];
+const ORDER_OF_OPS: [&str; 8] = ["->", "=", "-", "+", "/", "*", NEG_SYMBOL, "^"];
 
 /// Internal symbol for -1, for parser uses only
 ///
@@ -161,7 +166,7 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
 
             // Separate the string into a left and right side...
             let left = string[..splitpoint].to_string();
-            let right = string[splitpoint + 1..].to_string();
+            let right = string[splitpoint + opcode.len()..].to_string();
 
             // Parse the left and right sides recursively...
             return match opcode {
@@ -190,6 +195,7 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
                     Box::new(parse(&left, vartable)?),
                     Box::new(parse(&right, vartable)?),
                 )),
+                "->" => Ok(Token::Store(right, Box::new(parse(&left, vartable)?))),
                 // It is entrely possible I am a terrible programmer and I forgot to implement all the operators in the ORDER_OF_OPS table...
                 _ => {
                     panic!("\n\nFatal Oopsiedaisies!\n\n\tOperator found in table but no code to handle it: {}\n\n", opcode);

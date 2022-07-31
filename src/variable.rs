@@ -41,14 +41,6 @@ impl Variable {
             tokens: value,
         }
     }
-
-    pub fn to_string(&self) -> String {
-        self.id.clone()
-    }
-
-    pub fn get_value(&self) -> Token {
-        self.tokens.clone()
-    }
 }
 
 /// Struct for the built-in vartable type
@@ -60,11 +52,16 @@ pub struct VarTable {
 }
 
 impl VarTable {
+    /// Create an empty VarTable
+    ///
     pub fn new() -> Self {
         Self {
             variables: Vec::<Variable>::new(),
         }
     }
+
+    /// Add a variable to the VarTable, fail if the variable exists
+    ///
     pub fn add(&mut self, var: Variable) -> Result<(), Box<dyn Error>> {
         if self.variables.iter().find(|&i| i.id == var.id) == None {
             self.variables.push(var);
@@ -74,6 +71,8 @@ impl VarTable {
         }
     }
 
+    /// Remove a variable from the VarTable given just the id, fail if the variable doesn't exist
+    ///
     pub fn remove(&mut self, id: &str) -> Result<(), Box<dyn Error>> {
         let new_variables: Vec<Variable> = self
             .variables
@@ -91,6 +90,23 @@ impl VarTable {
         Ok(())
     }
 
+    /// Store a variable to the VarTable, replacing a variable if it exists with the updated value
+    ///
+    pub fn store(&mut self, var: Variable) -> Result<(), Box<dyn Error>> {
+        let new_variables: Vec<Variable> = self
+            .variables
+            .clone()
+            .into_iter()
+            .filter(|i| i.id != var.id)
+            .collect();
+
+        self.variables = new_variables;
+
+        self.add(var)
+    }
+
+    /// Get a variable from the VarTable given just the id
+    ///
     pub fn get(&mut self, id: &str) -> Result<Variable, Box<dyn Error>> {
         match self.variables.iter().find(|&i| i.id == id) {
             Some(var) => Ok(var.clone()),
@@ -110,13 +126,14 @@ mod tests {
     fn test_var() {
         let var = Variable::new("x", Token::Number(Number::neg_one()));
 
-        assert_eq!(var.to_string(), "x");
-        assert_eq!(var.get_value().to_string(0), "-1");
+        assert_eq!(var.id, "x");
+        assert_eq!(var.tokens.to_string(0), "-1");
     }
 
     #[test]
-    fn test_vartable_add_get_remove() {
+    fn test_vartable_add_store_get_remove() {
         let var = Variable::new("x", Token::Number(Number::neg_one()));
+        let var2 = Variable::new("x", Token::Number(Number::from_str("2").unwrap()));
 
         // Create the vartable
         let mut vartable = VarTable::new();
@@ -127,11 +144,14 @@ mod tests {
         // Add the variable again, should fail
         vartable.add(var.clone()).unwrap_err();
 
+        // Store the variable, should overwrite the existing variable
+        vartable.store(var2.clone()).unwrap();
+
         // Retrieve it
-        let var2 = vartable.get("x").unwrap();
+        let var3 = vartable.get("x").unwrap();
 
         // Assert they are equal
-        assert_eq!(var, var2);
+        assert_eq!(var3, var2);
 
         // Remove it
         vartable.remove("x").unwrap();
