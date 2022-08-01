@@ -5,7 +5,6 @@
 **ApeCrunch** aims to be a fast, user-friendly Rust/TUI calculator port of the popular [SpeedCrunch](https://speedcrunch.org/) project. While not a copy-paste port, there are plans to implement every function SpeedCrunch supports plus the addition of much more
 
 ## **TO-DO:**
- - [ ] Add check to make sure variable names are valid when storing
  - [ ] Add good exponents
  - [ ] Add good roots
  - [ ] Add dedicated square root function
@@ -18,6 +17,7 @@
 ### **Version 0.0.2**
 - [X] **Added variables** *(commit 2bf6780/337064e)*
     - [X] **Added automatic storing of variables to history files** *(commit 52e7c70)*
+    - [X] **Added variable name checking** *(commit 4170b3e)*
 - [X] **Added history file version check** *(commit 8ab539d)*
 - [X] **Fixed crash when reading corrupt/incompatible history files** *(commit 8ab539d)*
 - [X] **Fixed order of operation** *(commit 2e31175)*
