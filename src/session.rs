@@ -34,7 +34,7 @@ use std::path::PathBuf;
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionTOML {
-    pub decimal_places: usize,
+    pub decimal_places: u32,
 }
 
 /// All semi-global settings and variables that are needed for the session.
@@ -46,7 +46,7 @@ pub struct Session {
     /// Path to the data directory.
     pub data_dir: PathBuf,
     /// Number of decimal places to render.
-    pub decimal_places: usize,
+    pub decimal_places: u32,
     /// Variables stored in the session
     pub vartable: VarTable,
 }
@@ -180,7 +180,7 @@ impl Session {
 }
 
 /// Default number of decimal places to render. Does not affect precision of calculations.
-pub const DEFAULT_DECIMAL_PLACES: usize = 6;
+pub const DEFAULT_DECIMAL_PLACES: u32 = 6;
 
 /// Default filename of the session config file.
 pub static DEFAULT_SESSION_TOML_NAME: &str = "session.toml";

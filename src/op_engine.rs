@@ -27,10 +27,10 @@ use std::error::Error;
 ///
 /// For example, 2+2 would be equal to 4.
 ///
-pub fn get_equality(tokens: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+pub fn get_equality(tokens: &Token, vartable: &mut VarTable, prec: u32) -> Result<Token, Box<dyn Error>> {
     Ok(Token::Equality(
         Box::new(tokens.clone()),
-        Box::new(simplify(tokens, vartable)?),
+        Box::new(simplify(tokens, vartable, prec)?),
     ))
 }
 
@@ -38,12 +38,12 @@ pub fn get_equality(tokens: &Token, vartable: &mut VarTable) -> Result<Token, Bo
 ///
 /// For example, 2+2 would simplify into 4.
 ///
-pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+pub fn simplify(token: &Token, vartable: &mut VarTable, prec: u32) -> Result<Token, Box<dyn Error>> {
     match token {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {
-            let left_result = simplify(left, vartable)?; // Recursively simplify the left side.
-            let right_result = simplify(right, vartable)?; // Recursively simplify the right side.
+            let left_result = simplify(left, vartable, prec)?; // Recursively simplify the left side.
+            let right_result = simplify(right, vartable, prec)?; // Recursively simplify the right side.
 
             // If both sides are numbers, operate on them and return a number token.
             if let Token::Number(left_number) = &left_result {
@@ -61,8 +61,8 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Divide(left, right) => {
-            let left_result = simplify(left, vartable)?;
-            let right_result = simplify(right, vartable)?;
+            let left_result = simplify(left, vartable, prec)?;
+            let right_result = simplify(right, vartable, prec)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
@@ -74,8 +74,8 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Add(left, right) => {
-            let left_result = simplify(left, vartable)?;
-            let right_result = simplify(right, vartable)?;
+            let left_result = simplify(left, vartable, prec)?;
+            let right_result = simplify(right, vartable, prec)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
@@ -87,8 +87,8 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Subtract(left, right) => {
-            let left_result = simplify(left, vartable)?;
-            let right_result = simplify(right, vartable)?;
+            let left_result = simplify(left, vartable, prec)?;
+            let right_result = simplify(right, vartable, prec)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
@@ -103,12 +103,12 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Exponent(left, right) => {
-            let left_result = simplify(left, vartable)?;
-            let right_result = simplify(right, vartable)?;
+            let left_result = simplify(left, vartable, prec)?;
+            let right_result = simplify(right, vartable, prec)?;
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Ok(Token::Number(left_number.exponent(&right_number)));
+                    return Ok(Token::Number(left_number.exponent(&right_number, prec)));
                 }
             }
 
@@ -119,13 +119,13 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Equality(left, right) => {
-            let left_result = simplify(left, vartable)?;
-            let right_result = simplify(right, vartable)?;
+            let left_result = simplify(left, vartable, prec)?;
+            let right_result = simplify(right, vartable, prec)?;
 
             Ok(Token::Boolean(left_result == right_result))
         }
 
-        Token::Parenthesis(expression) => simplify(expression, vartable),
+        Token::Parenthesis(expression) => simplify(expression, vartable, prec),
 
         Token::Number(_number) => Ok(token.clone()),
 
@@ -134,7 +134,7 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         Token::Variable(variable) => Ok(variable.tokens.clone()),
 
         Token::Negative(expression) => {
-            let result = simplify(expression, vartable)?;
+            let result = simplify(expression, vartable, prec)?;
 
             if let Token::Number(number) = &result {
                 return Ok(Token::Number(number.negative()));
@@ -144,7 +144,7 @@ pub fn simplify(token: &Token, vartable: &mut VarTable) -> Result<Token, Box<dyn
         }
 
         Token::Store(id, tokens) => {
-            let simplified_tokens = simplify(tokens, vartable)?;
+            let simplified_tokens = simplify(tokens, vartable, prec)?;
             let variable = Variable::new(id, simplified_tokens.clone());
             vartable.store(variable)?;
 
@@ -184,7 +184,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWO);
         } else {
@@ -198,7 +198,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOPTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOPTWO_R);
         } else {
@@ -212,7 +212,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOSTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOSTWO_R);
         } else {
@@ -226,7 +226,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOMTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOMTWO_R);
         } else {
@@ -240,7 +240,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWODTWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWODTWO_R);
         } else {
@@ -254,7 +254,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOETWO, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOETWO_R);
         } else {
@@ -268,7 +268,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOQTWO, &mut vartable).unwrap();
 
-        if let Token::Boolean(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Boolean(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(), TWOQTWO_R);
         } else {
@@ -282,7 +282,7 @@ mod tests {
         let mut vartable = VarTable::new();
         let tokenized_expression = parser::parse_str(TWOSTORE, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWOSTORE_R);
         } else {
@@ -291,7 +291,7 @@ mod tests {
 
         let tokenized_expression = parser::parse_str(TWORET, &mut vartable).unwrap();
 
-        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable).unwrap() {
+        if let Token::Number(num) = simplify(&tokenized_expression, &mut vartable, 6).unwrap() {
             // Assert that the right of the operation is what we expect
             assert_eq!(num.to_string(6), TWORET_R);
         } else {

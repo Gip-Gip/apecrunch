@@ -63,7 +63,7 @@ pub enum Token {
 impl Token {
     /// Converts entire tokenized expressions into strings recursively.
     ///
-    pub fn to_string(&self, prec: usize) -> String {
+    pub fn to_string(&self, prec: u32) -> String {
         match self {
             Token::Exponent(left, right) => {
                 format!("{}^{}", left.to_string(prec), right.to_string(prec))

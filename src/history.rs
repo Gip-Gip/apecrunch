@@ -50,7 +50,7 @@ pub struct HistoryBincode {
     /// Session UUID.
     pub session_uuid: Uuid,
     /// Decimal places visible when rendering numbers.
-    pub decimal_places: usize,
+    pub decimal_places: u32,
     /// Session VarTable, all of the variables stored in the session
     pub session_vartable: VarTable,
     /// Vector containing all of the previous history entries.
@@ -93,7 +93,7 @@ pub struct HistoryEntry {
 impl HistoryEntry {
     /// Creates a new entry struct from parser tokens and the desired amount of decimal places to render.
     ///
-    pub fn new(expression: &Token, decimal_places: usize) -> Self {
+    pub fn new(expression: &Token, decimal_places: u32) -> Self {
         let entry_uuid = Uuid::new_v4();
 
         Self {
@@ -113,7 +113,7 @@ impl HistoryEntry {
     ///
     /// Just returns the expression unmodified if there is no equal sign.
     ///
-    pub fn render_without_equality(&self, decimal_places: usize) -> String {
+    pub fn render_without_equality(&self, decimal_places: u32) -> String {
         if let Token::Equality(left, _right) = &self.expression {
             return left.to_string(decimal_places);
         }

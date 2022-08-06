@@ -87,7 +87,7 @@ mod tests {
 
         let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
 
-        let result = op_engine::get_equality(&tokens, &mut vartable).unwrap();
+        let result = op_engine::get_equality(&tokens, &mut vartable, 0).unwrap();
 
         assert_eq!(result.to_string(0), expected_result);
     }
@@ -100,7 +100,7 @@ mod tests {
 
         let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
 
-        let result = op_engine::get_equality(&tokens, &mut vartable).unwrap();
+        let result = op_engine::get_equality(&tokens, &mut vartable, 13).unwrap();
 
         assert_eq!(result.to_string(13), expected_result);
     }

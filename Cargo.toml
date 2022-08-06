@@ -26,3 +26,10 @@ clap = { version = "3.2.6", features = ["derive", "unicode"] }                  
 termcolor = "1.1.3"                                                             # Terminal colors n stuff
 bincode = "1.3.3"                                                               # Binary storage format
 serial_test = "0.8.0"                                                           # Serial tests(why isn't this a default rust feature)
+
+[dev-dependencies]
+criterion = "0.3.6"
+
+[[bench]]
+name = "sqrt"
+harness = false

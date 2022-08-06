@@ -213,6 +213,8 @@ impl Tui {
         let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
         let mut history: ViewRef<SelectView<usize>> = cursive.find_name(TUI_HISTORY_ID).unwrap();
 
+        eprint!("{}", &cache.session.decimal_places);
+
         // Add the current entry bar contents to the history cache and clear the entry bar.
         //
 
@@ -226,7 +228,7 @@ impl Tui {
         };
 
         // Go through the tokens an operate on them, getting an equality.
-        let result = match op_engine::get_equality(&tokens, &mut cache.session.vartable) {
+        let result = match op_engine::get_equality(&tokens, &mut cache.session.vartable, cache.session.decimal_places) {
             Ok(result) => result,
             Err(error) => {
                 Self::nonfatal_error_dialog(cursive, error);
