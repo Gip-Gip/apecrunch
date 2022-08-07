@@ -228,7 +228,11 @@ impl Tui {
         };
 
         // Go through the tokens an operate on them, getting an equality.
-        let result = match op_engine::get_equality(&tokens, &mut cache.session.vartable, cache.session.decimal_places) {
+        let result = match op_engine::get_equality(
+            &tokens,
+            &mut cache.session.vartable,
+            cache.session.decimal_places,
+        ) {
             Ok(result) => result,
             Err(error) => {
                 Self::nonfatal_error_dialog(cursive, error);

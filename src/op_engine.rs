@@ -27,7 +27,11 @@ use std::error::Error;
 ///
 /// For example, 2+2 would be equal to 4.
 ///
-pub fn get_equality(tokens: &Token, vartable: &mut VarTable, prec: u32) -> Result<Token, Box<dyn Error>> {
+pub fn get_equality(
+    tokens: &Token,
+    vartable: &mut VarTable,
+    prec: u32,
+) -> Result<Token, Box<dyn Error>> {
     Ok(Token::Equality(
         Box::new(tokens.clone()),
         Box::new(simplify(tokens, vartable, prec)?),
@@ -38,7 +42,11 @@ pub fn get_equality(tokens: &Token, vartable: &mut VarTable, prec: u32) -> Resul
 ///
 /// For example, 2+2 would simplify into 4.
 ///
-pub fn simplify(token: &Token, vartable: &mut VarTable, prec: u32) -> Result<Token, Box<dyn Error>> {
+pub fn simplify(
+    token: &Token,
+    vartable: &mut VarTable,
+    prec: u32,
+) -> Result<Token, Box<dyn Error>> {
     match token {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {

@@ -18,16 +18,16 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use fraction::Zero;
 use fraction::BigFraction;
 use fraction::BigUint;
 use fraction::One;
 use fraction::Sign;
+use fraction::Zero;
+use lazy_static::*;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
 use std::str::FromStr;
-use lazy_static::*;
 
 /// Type used to represent and operate on all numerical values, currently just a Big Fraction.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -61,7 +61,11 @@ impl Number {
         // Tell the user that there is more precision than displayed
         // I'll eventually think of a better way to see if we should print three dots...
         let base_str = format!("{num:.prec$}", num = self.fraction, prec = prec as usize);
-        let ext_str = format!("{num:.prec$}", num = self.fraction, prec = (prec as usize + 1));
+        let ext_str = format!(
+            "{num:.prec$}",
+            num = self.fraction,
+            prec = (prec as usize + 1)
+        );
 
         if ext_str.len() > base_str.len() {
             return format!("{}...", base_str);
@@ -152,7 +156,7 @@ impl Number {
     }
 
     /// Gets the square root of a number
-    /// 
+    ///
     pub fn sqrt(&self, prec: u32) -> Self {
         lazy_static! {
             static ref ONE: BigFraction = BigFraction::one();
@@ -164,9 +168,13 @@ impl Number {
             static ref SEVEN_O_256: BigFraction = BigFraction::new(7u8, 256u16);
         }
 
+        let min_move = BigFraction::new(1u8, TEN_BIGINT.pow(prec + 1));
+
         let a = &self.fraction;
 
         let mut x = &*ONE_O_TWO * &a;
+
+        let mut last_move = BigFraction::one();
 
         // Reference hell
         //
@@ -174,26 +182,36 @@ impl Number {
         //
         // h = 1-a / x^2
         // x = x * (1 - h * (1/2 + h * (1/8 + h * (1/16 * h * (5/128 + h * 7/256)))))
-        for _ in 0..100 {
+        //
+        // Will compute until every digit up to the precision is 100% accurate, in theory
+        while &last_move > &min_move {
+            last_move = x.clone();
             let h = &*ONE - &(a / &(&x * &x));
-            x = &x * &(&*ONE - &(&h * &(&*ONE_O_TWO + &(&h * &(&*ONE_O_EIGHT + &(&h * &(&*ONE_O_SIXTEEN * &h * (&*FIVE_O_128 + &(&h * &*SEVEN_O_256)))))))));
+            x = &x
+                * &(&*ONE
+                    - &(&h
+                        * &(&*ONE_O_TWO
+                            + &(&h
+                                * &(&*ONE_O_EIGHT
+                                    + &(&h
+                                        * &(&*ONE_O_SIXTEEN
+                                            * &h
+                                            * (&*FIVE_O_128 + &(&h * &*SEVEN_O_256)))))))));
+            last_move = (&x - &last_move).abs();
             x = Self::round_denom(x, TEN_BIGINT.pow(prec + 1));
         }
 
-        return Self {
-            fraction: x,
-        }
+        return Self { fraction: x };
     }
 
     /// Rounds the denominator for quicker calculations which don't need perfect accuracy
-    /// 
+    ///
     fn round_denom(fract: BigFraction, denom: BigUint) -> BigFraction {
         let divisor = fract.denom().unwrap() / &denom;
 
         if divisor > BigUint::zero() {
             BigFraction::new(fract.numer().unwrap() / divisor, denom)
-        }
-        else {
+        } else {
             fract
         }
     }
