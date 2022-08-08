@@ -131,10 +131,7 @@ impl Number {
         let powered = Number { fraction: num };
 
         let root = Number {
-            fraction: BigFraction::new_raw(
-                other.fraction.denom().unwrap().clone(),
-                BigUint::from(1u32),
-            ),
+            fraction: BigFraction::new_raw(other.fraction.denom().unwrap().clone(), 1u8.into()),
         };
 
         Self::root(&powered, &root, prec)
@@ -160,45 +157,28 @@ impl Number {
     pub fn sqrt(&self, prec: u32) -> Self {
         lazy_static! {
             static ref ONE: BigFraction = BigFraction::one();
+            static ref TWO: BigFraction = 2u8.into();
             static ref TEN_BIGINT: BigUint = 10u8.into();
-            static ref ONE_O_TWO: BigFraction = BigFraction::new(1u8, 2u8);
-            static ref ONE_O_EIGHT: BigFraction = BigFraction::new(1u8, 8u8);
-            static ref ONE_O_SIXTEEN: BigFraction = BigFraction::new(1u8, 16u8);
-            static ref FIVE_O_128: BigFraction = BigFraction::new(5u8, 128u8);
-            static ref SEVEN_O_256: BigFraction = BigFraction::new(7u8, 256u16);
         }
 
-        let min_move = BigFraction::new(1u8, TEN_BIGINT.pow(prec + 1));
+        let prec = TEN_BIGINT.pow(prec + 1);
+
+        let min_move = BigFraction::new(1u8, prec.clone());
 
         let a = &self.fraction;
 
-        let mut x = &*ONE_O_TWO * &a;
+        let mut x = a / &*TWO;
 
         let mut last_move = BigFraction::one();
 
-        // Reference hell
-        //
-        // Simplifies down to
-        //
-        // h = 1-a / x^2
-        // x = x * (1 - h * (1/2 + h * (1/8 + h * (1/16 * h * (5/128 + h * 7/256)))))
-        //
         // Will compute until every digit up to the precision is 100% accurate, in theory
-        while &last_move > &min_move {
+        //
+        // Uses newton method as dividing fractions by two is a really easy operation to perform on fractions
+        while &last_move >= &min_move {
             last_move = x.clone();
-            let h = &*ONE - &(a / &(&x * &x));
-            x = &x
-                * &(&*ONE
-                    - &(&h
-                        * &(&*ONE_O_TWO
-                            + &(&h
-                                * &(&*ONE_O_EIGHT
-                                    + &(&h
-                                        * &(&*ONE_O_SIXTEEN
-                                            * &h
-                                            * (&*FIVE_O_128 + &(&h * &*SEVEN_O_256)))))))));
+            x = Self::round_denom(x, &prec);
+            x = &(&x + &(a / &x)) / &*TWO;
             last_move = (&x - &last_move).abs();
-            x = Self::round_denom(x, TEN_BIGINT.pow(prec + 1));
         }
 
         return Self { fraction: x };
@@ -206,11 +186,11 @@ impl Number {
 
     /// Rounds the denominator for quicker calculations which don't need perfect accuracy
     ///
-    fn round_denom(fract: BigFraction, denom: BigUint) -> BigFraction {
-        let divisor = fract.denom().unwrap() / &denom;
+    fn round_denom(fract: BigFraction, denom: &BigUint) -> BigFraction {
+        let divisor = fract.denom().unwrap() / denom;
 
         if divisor > BigUint::zero() {
-            BigFraction::new(fract.numer().unwrap() / divisor, denom)
+            BigFraction::new(fract.numer().unwrap() / divisor, denom.clone())
         } else {
             fract
         }
@@ -226,7 +206,7 @@ mod tests {
         let fract1 = BigFraction::new(3u8, 8u8);
         let fract2 = BigFraction::new(1u8, 4u8);
 
-        let fract3 = Number::round_denom(fract1, 4u8.into());
+        let fract3 = Number::round_denom(fract1, &4u8.into());
 
         assert_eq!(fract2, fract3);
     }
