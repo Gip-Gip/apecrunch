@@ -6,9 +6,12 @@ pub fn sqrt_benchmark(c: &mut Criterion) {
 
     let val2 = Number::from_str("9999").unwrap();
 
+    let val3 = Number::from_str("9999999999999999").unwrap();
+
+
     c.bench_function("square root of two", |b: &mut Bencher| {
         b.iter(|| {
-            val1.sqrt(6);
+            val1.root(&val1, 6);
         })
     });
 
@@ -16,7 +19,16 @@ pub fn sqrt_benchmark(c: &mut Criterion) {
         "square root of nine-thousand, nine-hundred and ninty-nine",
         |b: &mut Bencher| {
             b.iter(|| {
-                val2.sqrt(6);
+                val2.root(&val1, 6);
+            })
+        },
+    );
+
+    c.bench_function(
+        "square root of an obscenely large number",
+        |b: &mut Bencher| {
+            b.iter(|| {
+                val3.root(&val1, 6);
             })
         },
     );

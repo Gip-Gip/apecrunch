@@ -104,4 +104,17 @@ mod tests {
 
         assert_eq!(result.to_string(13), expected_result);
     }
+
+    #[test]
+    fn test_sqrt() {
+        let user_string = "16^0.5";
+        let expected_result = "16^0.5 = 4";
+        let mut vartable = VarTable::new();
+
+        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
+
+        let result = op_engine::get_equality(&tokens, &mut vartable, 13).unwrap();
+
+        assert_eq!(result.to_string(13), expected_result);
+    }
 }

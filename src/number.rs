@@ -116,56 +116,84 @@ impl Number {
     /// Raises this number to the power of another number.
     ///
     pub fn exponent(&self, other: &Number, prec: u32) -> Number {
-        let mut num = self.fraction.clone();
-
-        let mut exp = other.fraction.numer().unwrap().clone();
-
-        // Power the number by the numerator of the exponent.
-        while !exp.is_one() {
-            num = &num * &self.fraction;
-            exp -= &BigUint::one();
+        match &self.fraction {
+            BigFraction::Infinity(_) | BigFraction::NaN => {
+                return self.clone()
+            }
+            _ => {
+            }
         }
 
-        // Root the number by the denominator of the exponent.
-
-        let powered = Number { fraction: num };
-
-        let root = Number {
-            fraction: BigFraction::new_raw(other.fraction.denom().unwrap().clone(), 1u8.into()),
+        let result = Self {
+            fraction: Self::pow(&self.fraction, &other.fraction),
         };
 
-        Self::root(&powered, &root, prec)
+        let root = other.fraction.denom().unwrap().clone();
+
+        if root == BigUint::one() {
+            result
+        }
+
+        else {
+            let root_num = Self {
+                fraction: BigFraction::new_raw(root, 1u8.into()),
+            };
+
+            Self::root(&result, &root_num, prec)
+        }
+    }
+
+    fn pow(num: &BigFraction, pow: &BigFraction) -> BigFraction {
+        match num {
+            BigFraction::Infinity(_) | BigFraction::NaN => {
+                return num.clone()
+            }
+            _ => {
+            }
+        }
+        
+        let mut i = pow.numer().unwrap().clone();
+        let mut result = num.clone();
+
+        while i > BigUint::one() {
+            result = num * &result;
+            i -= BigUint::one();
+        }
+        
+        result
     }
 
     /// Gets the nth root of this number.
     ///
-    /// Hilariously awful root function, temporary placeholder. **VERY SLOW AND VERY INACCURATE.**
-    ///
     pub fn root(&self, other: &Number, prec: u32) -> Number {
-        let mut i = other.fraction.clone();
-        let mut result = self.clone();
-        while i > BigFraction::one() {
-            result = result.sqrt(prec);
-            i -= BigFraction::one();
-        }
-
-        result
-    }
-
-    /// Gets the square root of a number
-    ///
-    pub fn sqrt(&self, prec: u32) -> Self {
         lazy_static! {
             static ref ONE: BigFraction = BigFraction::one();
             static ref TWO: BigFraction = 2u8.into();
             static ref TEN_BIGINT: BigUint = 10u8.into();
         }
 
-        let prec = TEN_BIGINT.pow(prec + 1);
+        match &self.fraction {
+            BigFraction::Infinity(_) | BigFraction::NaN => {
+                return self.clone()
+            }
+            _ => {
+                if self.fraction < BigFraction::zero() { // Return NaN if we're trying to get the square root of a negative, to be implemented!
+                    return Self {
+                        fraction: BigFraction::NaN
+                    }
+                }
+            }
+        }
+        
+        let prec_bigint = TEN_BIGINT.pow(prec + 1);
 
-        let min_move = BigFraction::new(1u8, prec.clone());
+        let min_move = BigFraction::new(1u8, prec_bigint.clone());
 
         let a = &self.fraction;
+
+        let root = BigFraction::new_raw(other.fraction.numer().unwrap().clone(), 1u8.into());
+
+        let lroot = &root - &BigFraction::one();
 
         let mut x = a / &*TWO;
 
@@ -173,15 +201,28 @@ impl Number {
 
         // Will compute until every digit up to the precision is 100% accurate, in theory
         //
-        // Uses newton method as dividing fractions by two is a really easy operation to perform on fractions
+        // Uses newton method for finding a root
         while &last_move >= &min_move {
             last_move = x.clone();
-            x = Self::round_denom(x, &prec);
-            x = &(&x + &(a / &x)) / &*TWO;
+            x = Self::round_denom(x, &prec_bigint);
+            x = &x - &(&(&Self::pow(&x, &root) - a) / &(&root * &Self::pow(&x, &lroot)));
             last_move = (&x - &last_move).abs();
         }
 
-        return Self { fraction: x };
+        let result = Self {
+            fraction: x
+        };
+
+        if other.fraction.denom().unwrap() == &BigUint::one() {
+            result
+        }
+        else {
+            let exp = Number {
+                fraction: BigFraction::new_raw(other.fraction.denom().unwrap().clone(), 1u8.into()),
+            };
+
+            Self::exponent(&result, &exp, prec)
+        }
     }
 
     /// Rounds the denominator for quicker calculations which don't need perfect accuracy
