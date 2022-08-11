@@ -22,6 +22,7 @@ use fraction::BigFraction;
 use fraction::BigUint;
 use fraction::One;
 use fraction::Sign;
+use fraction::Signed;
 use fraction::Zero;
 use lazy_static::*;
 use serde::Deserialize;
@@ -152,7 +153,11 @@ impl Number {
             i -= BigUint::one();
         }
 
-        result
+        if pow.is_negative() {
+            BigFraction::one() / result
+        } else {
+            result
+        }
     }
 
     /// Gets the nth root of this number.
@@ -200,7 +205,12 @@ impl Number {
             last_move = (&x - &last_move).abs();
         }
 
-        let result = Self { fraction: x };
+        let result = Self {
+            fraction: match other.fraction.is_negative() {
+                true => BigFraction::one() / x,
+                false => x,
+            },
+        };
 
         if other.fraction.denom().unwrap() == &BigUint::one() {
             result
