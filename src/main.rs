@@ -106,15 +106,22 @@ mod tests {
     }
 
     #[test]
-    fn test_sqrt() {
-        let user_string = "16^0.5";
-        let expected_result = "16^0.5 = 4";
+    fn test_roots() {
+        let user_string1 = "16^0.5";
+        let expected_result1 = "16^0.5 = 4";
+        let user_string2 = "999999999^(2/3)";
+        let expected_result2 = "999999999^( 2 / 3 ) = 999999.999333333333222222222172839506...";
         let mut vartable = VarTable::new();
 
-        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
+        let tokens1 = parser::parse_str(user_string1, &mut vartable).unwrap();
 
-        let result = op_engine::get_equality(&tokens, &mut vartable, 13).unwrap();
+        let result1 = op_engine::get_equality(&tokens1, &mut vartable, 1).unwrap();
 
-        assert_eq!(result.to_string(13), expected_result);
+        let tokens2 = parser::parse_str(user_string2, &mut vartable).unwrap();
+
+        let result2 = op_engine::get_equality(&tokens2, &mut vartable, 30).unwrap();
+
+        assert_eq!(result1.to_string(1), expected_result1);
+        assert_eq!(result2.to_string(30), expected_result2);
     }
 }
