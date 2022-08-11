@@ -120,7 +120,7 @@ const NEG_SYMBOL: &str = "\x26";
 pub fn parse_str(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
     // Regex definitions n stuff
     lazy_static! {
-        static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
+        static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[(=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
     }
 
     let mut cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();

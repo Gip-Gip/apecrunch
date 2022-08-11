@@ -117,11 +117,8 @@ impl Number {
     ///
     pub fn exponent(&self, other: &Number, prec: u32) -> Number {
         match &self.fraction {
-            BigFraction::Infinity(_) | BigFraction::NaN => {
-                return self.clone()
-            }
-            _ => {
-            }
+            BigFraction::Infinity(_) | BigFraction::NaN => return self.clone(),
+            _ => {}
         }
 
         let result = Self {
@@ -132,9 +129,7 @@ impl Number {
 
         if root == BigUint::one() {
             result
-        }
-
-        else {
+        } else {
             let root_num = Self {
                 fraction: BigFraction::new_raw(root, 1u8.into()),
             };
@@ -145,13 +140,10 @@ impl Number {
 
     fn pow(num: &BigFraction, pow: &BigFraction) -> BigFraction {
         match num {
-            BigFraction::Infinity(_) | BigFraction::NaN => {
-                return num.clone()
-            }
-            _ => {
-            }
+            BigFraction::Infinity(_) | BigFraction::NaN => return num.clone(),
+            _ => {}
         }
-        
+
         let mut i = pow.numer().unwrap().clone();
         let mut result = num.clone();
 
@@ -159,7 +151,7 @@ impl Number {
             result = num * &result;
             i -= BigUint::one();
         }
-        
+
         result
     }
 
@@ -173,18 +165,17 @@ impl Number {
         }
 
         match &self.fraction {
-            BigFraction::Infinity(_) | BigFraction::NaN => {
-                return self.clone()
-            }
+            BigFraction::Infinity(_) | BigFraction::NaN => return self.clone(),
             _ => {
-                if self.fraction < BigFraction::zero() { // Return NaN if we're trying to get the square root of a negative, to be implemented!
+                if self.fraction < BigFraction::zero() {
+                    // Return NaN if we're trying to get the square root of a negative, to be implemented!
                     return Self {
-                        fraction: BigFraction::NaN
-                    }
+                        fraction: BigFraction::NaN,
+                    };
                 }
             }
         }
-        
+
         let prec_bigint = TEN_BIGINT.pow(prec + 1);
 
         let min_move = BigFraction::new(1u8, prec_bigint.clone());
@@ -209,14 +200,11 @@ impl Number {
             last_move = (&x - &last_move).abs();
         }
 
-        let result = Self {
-            fraction: x
-        };
+        let result = Self { fraction: x };
 
         if other.fraction.denom().unwrap() == &BigUint::one() {
             result
-        }
-        else {
+        } else {
             let exp = Number {
                 fraction: BigFraction::new_raw(other.fraction.denom().unwrap().clone(), 1u8.into()),
             };

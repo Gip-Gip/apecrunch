@@ -8,7 +8,6 @@ pub fn sqrt_benchmark(c: &mut Criterion) {
 
     let val3 = Number::from_str("9999999999999999").unwrap();
 
-
     c.bench_function("square root of two", |b: &mut Bencher| {
         b.iter(|| {
             val1.root(&val1, 6);
