@@ -290,7 +290,7 @@ impl Tui {
 
         let entry_bar_content = format!("{}{}{}", left, entry, right);
 
-        curser_pos += entry_bar_content.len();
+        curser_pos += entry.len();
 
         entry_bar.set_content(entry_bar_content);
         entry_bar.set_cursor(curser_pos);
