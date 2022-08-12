@@ -19,6 +19,7 @@
     - [X] **Added automatic storing of variables to history files** *(commit 52e7c70)*
     - [X] **Added variable name checking** *(commit 4170b3e)*
 - [X] **Added history file version check** *(commit 8ab539d)*
+- [X] **Improved the code that postfixes three dots to numbers if there is a loss of precision converting the number to a string** *(commit c9e1613)*
 - [X] **Fixed crash when reading corrupt/incompatible history files** *(commit 8ab539d)*
 - [X] **Fixed order of operation** *(commit 2e31175)*
 
