@@ -37,7 +37,7 @@ use uuid::Uuid;
 
 /// Versions of history files that this version of apecrunch is compatible with
 ///
-pub const COMPAT_VERS: [&str; 1] = ["0.0.2"];
+pub const COMPAT_VERS: [&str; 2] = ["0.0.2", "0.0.3"];
 
 /// Layout of history bincodes when serializing a session.
 ///

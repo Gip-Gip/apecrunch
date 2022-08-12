@@ -13,6 +13,9 @@
 
 ## **Changelog:**
 
+### **Version 0.0.3**
+ - [X] **Fixed bug where inserting a previous history entry would cause a panic** *(commit 5a0152e)*
+
 ### **Version 0.0.2**
 - [X] **Added good roots** *(commits 204f105/032b169/c98ee95/0298679/c980033)*
 - [X] **Added variables** *(commits 2bf6780/337064e)*
