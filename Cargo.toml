@@ -12,7 +12,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cursive = { version = "0.18.0", features = ["toml", "crossterm-backend"] }      # TUI
+cursive = { version = "0.19.0", features = ["toml", "crossterm-backend"] }      # TUI
 simple-error = "0.2.3"                                                          # Simple error creation
 fraction = { version = "0.11.0", features = ["with-serde-support"] }            # Fractional numbers
 lazy_static = "1.4.0"                                                           # Caching regex compilations
