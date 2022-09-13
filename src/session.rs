@@ -34,7 +34,8 @@ use std::path::PathBuf;
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionTOML {
-    pub decimal_places: u32,
+    pub decimal_places: Option<u32>,
+    pub history_depth: Option<u32>,
 }
 
 /// All semi-global settings and variables that are needed for the session.
@@ -47,6 +48,8 @@ pub struct Session {
     pub data_dir: PathBuf,
     /// Number of decimal places to render.
     pub decimal_places: u32,
+    /// Number of history entries to render.
+    pub history_depth: u32,
     /// Variables stored in the session
     pub vartable: VarTable,
 }
@@ -67,6 +70,7 @@ impl Session {
             config_dir: dirs.config_dir().to_owned(),
             data_dir: dirs.data_dir().to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
+            history_depth: DEFAULT_HISTORY_DEPTH,
             vartable: VarTable::new(),
         }
     }
@@ -80,6 +84,7 @@ impl Session {
             config_dir: Path::new("test/config").to_owned(),
             data_dir: Path::new("test/data").to_owned(),
             decimal_places: DEFAULT_DECIMAL_PLACES,
+            history_depth: DEFAULT_HISTORY_DEPTH,
             vartable: VarTable::new(),
         }
     }
@@ -117,7 +122,13 @@ impl Session {
         let session_toml: SessionTOML = toml::from_slice(&session_config_data)?;
 
         // Apply the config file to the session.
-        self.decimal_places = session_toml.decimal_places;
+        if let Some(decimal_places) = session_toml.decimal_places {
+            self.decimal_places = decimal_places;
+        }
+
+        if let Some(history_depth) = session_toml.history_depth {
+            self.history_depth = history_depth;
+        }
 
         Ok(())
     }
@@ -182,6 +193,9 @@ impl Session {
 /// Default number of decimal places to render. Does not affect precision of calculations.
 pub const DEFAULT_DECIMAL_PLACES: u32 = 6;
 
+/// Default number of history entries to render.
+pub const DEFAULT_HISTORY_DEPTH: u32 = 1000;
+
 /// Default filename of the session config file.
 pub static DEFAULT_SESSION_TOML_NAME: &str = "session.toml";
 
@@ -192,6 +206,7 @@ pub static DEFAULT_THEME_TOML_NAME: &str = "theme.toml";
 pub static DEFAULT_SESSION_TOML: &str = r##"# Auto generated session config
 
 decimal_places = 6
+history_depth = 1000
 "##;
 
 /// Contents of the default theme config file. Kinda going for a darkula theme here
