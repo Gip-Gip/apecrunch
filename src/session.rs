@@ -18,8 +18,11 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::parser::Token;
 use crate::variable::VarTable;
 use directories::ProjectDirs;
+use lazy_static::*;
+use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
@@ -29,6 +32,96 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
+use uuid::Uuid;
+
+/// Versions of history files that this version of apecrunch is compatible with
+///
+pub const HISTORY_COMPAT_VERS: [&str; 2] = ["0.0.2", "0.0.3"];
+
+/// Individual history entry retaining it's UUID, parser tokens, and textual rendition.
+///
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct HistoryEntry {
+    /// UUID of the entry.
+    entry_uuid: Uuid,
+    /// Parser tokens of the entry, basically the entire expression parsed down into it's most basic form
+    expression: Token,
+    /// Rendition of the entry's expression at the time of calculation
+    rendition: String,
+}
+
+impl HistoryEntry {
+    /// Creates a new entry struct from parser tokens and the desired amount of decimal places to render.
+    ///
+    pub fn new(expression: &Token, decimal_places: u32) -> Self {
+        let entry_uuid = Uuid::new_v4();
+
+        Self {
+            entry_uuid: entry_uuid,
+            expression: expression.clone(),
+            rendition: expression.to_string(decimal_places),
+        }
+    }
+
+    /// Converts the entry to a string.
+    ///
+    pub fn to_string(&self) -> String {
+        self.rendition.clone()
+    }
+
+    /// Renders the entry without an equal sign, nor everything right of it.
+    ///
+    /// Just returns the expression unmodified if there is no equal sign.
+    ///
+    pub fn render_without_equality(&self, decimal_places: u32) -> String {
+        if let Token::Equality(left, _right) = &self.expression {
+            return left.to_string(decimal_places);
+        }
+
+        self.expression.to_string(decimal_places)
+    }
+}
+
+/// Layout of history bincodes when serializing a session.
+///
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct HistoryBincode {
+    /// ApeCrunch Version in X.X.X format.
+    pub version: String,
+    /// Start of the session, in seconds since unix epoch.
+    pub session_start: u64,
+    /// Session UUID.
+    pub session_uuid: Uuid,
+    /// Decimal places visible when rendering numbers.
+    pub decimal_places: u32,
+    /// Session VarTable, all of the variables stored in the session
+    pub session_vartable: VarTable,
+    /// Vector containing all of the previous history entries.
+    pub entries: Vec<HistoryEntry>,
+}
+
+impl HistoryBincode {
+    /// Read an lz4_flex-compressed bincode from a slice and return a deserialized HistoryBincode
+    ///
+    pub fn from_slice(slice: &[u8]) -> Result<Self, Box<dyn Error>> {
+        let uncompressed_data = lz4_flex::block::decompress_size_prepended(slice)?;
+
+        Ok(bincode::deserialize(&uncompressed_data)?)
+    }
+
+    /// Serialize a HistoryBincode into an lz4_flex-compressed bincode, stored in a Vec<u8>
+    ///
+    /// **Note** that hopefully the uncompressed data is less that 4gb. If I'm correct lz4_flex uses a u32 for storing the uncompressed size of data,
+    /// though I doubt this will become a problem unless you leave the same ApeCrunch instance open for a couple thousand years...
+    ///
+    pub fn to_vec(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+        Ok(lz4_flex::block::compress_prepend_size(&bincode::serialize(
+            &self,
+        )?))
+    }
+}
 
 /// Serializable version of session. For creating session.toml.
 ///
@@ -52,6 +145,18 @@ pub struct Session {
     pub history_depth: u32,
     /// Variables stored in the session
     pub vartable: VarTable,
+    /// ApeCrunch Version in X.X.X format.
+    pub version: String,
+    /// Start of the session, in seconds since unix epoch.
+    pub session_start: u64,
+    /// Session UUID.
+    pub session_uuid: Uuid,
+    /// Vector containing all of the previous history entries.
+    pub entries: Vec<HistoryEntry>,
+    /// Path to the history file
+    pub history_file_path: PathBuf,
+    /// Previous entries found in previous sessions
+    pub previous_entries: Vec<HistoryEntry>,
 }
 
 impl Session {
@@ -59,39 +164,78 @@ impl Session {
     ///
     /// Sets config and data directory to system defaults.
     ///
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         let qualifier = "org";
         let organisation = "Open Ape Shop";
         let application = "ApeCrunch";
 
         let dirs = ProjectDirs::from(qualifier, organisation, application).unwrap();
 
-        Self {
+        let session_uuid = Uuid::new_v4();
+        let data_dir = dirs.data_dir().to_owned();
+        let mut history_file_path = data_dir.clone();
+
+        history_file_path.push(format!("history-{}.bincode.lz4", session_uuid));
+
+        // Should not happen, but in the 2^128 chance that it does...
+        if history_file_path.exists() {
+            panic!(
+                "Random file name generation failed! File {} already exists!",
+                history_file_path.to_str().unwrap()
+            );
+        }
+
+        Ok(Self {
             config_dir: dirs.config_dir().to_owned(),
-            data_dir: dirs.data_dir().to_owned(),
+            data_dir: data_dir,
             decimal_places: DEFAULT_DECIMAL_PLACES,
             history_depth: DEFAULT_HISTORY_DEPTH,
+            session_start: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+            session_uuid: session_uuid,
+            version: crate::VERSION.to_string(),
+            previous_entries: Vec::<HistoryEntry>::new(),
+            entries: Vec::<HistoryEntry>::new(),
+            history_file_path: history_file_path,
             vartable: VarTable::new(),
-        }
+        })
     }
 
     /// Creates a session that is safe for cargo test.
     ///
     /// Config and data files are stored in test/config/ and test/data/ respectively.
     ///
-    pub fn _new_test() -> Self {
-        Self {
+    pub fn _new_test() -> Result<Self, Box<dyn Error>> {
+        let data_dir = Path::new("test/data").to_owned();
+
+        let session_uuid = Uuid::new_v4();
+        let mut history_file_path = data_dir.clone();
+
+        history_file_path.push(format!("history-{}.bincode.lz4", session_uuid));
+
+        Ok(Self {
             config_dir: Path::new("test/config").to_owned(),
-            data_dir: Path::new("test/data").to_owned(),
+            data_dir: data_dir,
             decimal_places: DEFAULT_DECIMAL_PLACES,
             history_depth: DEFAULT_HISTORY_DEPTH,
+            session_start: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+            session_uuid: session_uuid,
+            version: crate::VERSION.to_string(),
+            previous_entries: Vec::<HistoryEntry>::new(),
+            entries: Vec::<HistoryEntry>::new(),
+            history_file_path: history_file_path,
             vartable: VarTable::new(),
-        }
+        })
     }
 
     /// Initialize a session, reading and, if necissary, creating, various config files needed for basic operation.
     ///
     pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
+        // Regex definitions for correctly identifying files
+        lazy_static! {
+            static ref HISTORY_FILE_RE: Regex =
+                Regex::new(r"(.*)(history\-)(.+)(\.bincode\.lz4)").unwrap();
+        }
+
         // Create the directories if they don't exist.
         if !self.config_dir.exists() {
             fs::create_dir_all(self.config_dir.as_path())?;
@@ -130,6 +274,54 @@ impl Session {
             self.history_depth = history_depth;
         }
 
+        // Load all previous history files
+
+        let mut previous_bincodes = Vec::<HistoryBincode>::new();
+
+        // Go through each file in the session's data directory...
+        for entry in fs::read_dir(&self.data_dir)? {
+            let path = entry?.path().as_path().to_owned();
+
+            let file_name = path.to_str().unwrap_or("");
+
+            // And if the file name matches the regex...
+            if HISTORY_FILE_RE.is_match(&file_name) {
+                // Load it!
+                let data = fs::read(&path)?;
+                let history_bincode = match HistoryBincode::from_slice(&data) {
+                    Ok(bincode) => bincode,
+                    Err(_e) => {
+                        // If our history file can't be serialized, print an error and move on...
+                        eprintln!(
+                            "History file {} corrupt or incompatible, not loading...",
+                            file_name
+                        );
+                        continue;
+                    }
+                };
+
+                // If our bincode version is compatible...
+                if HISTORY_COMPAT_VERS.contains(&history_bincode.version.as_str()) {
+                    previous_bincodes.push(history_bincode);
+                }
+                // Otherwise print an error...
+                else {
+                    eprintln!("History file version \"{}\" incompatible with apecrunch version {}, not loading...", history_bincode.version, crate::VERSION);
+                }
+            }
+        }
+
+        // Sort previous entries by session start time
+        previous_bincodes.sort_by(|a, b| a.session_start.cmp(&b.session_start));
+
+        // Load all previous session calculations and variables
+        for bincode in previous_bincodes {
+            // Merge previous variable declarations into the current session
+            self.vartable.merge(&bincode.session_vartable)?;
+            // Add previous calculation entry
+            self.previous_entries.extend_from_slice(&bincode.entries);
+        }
+
         Ok(())
     }
 
@@ -147,6 +339,21 @@ impl Session {
         }
 
         Ok(())
+    }
+
+    /// Add an entry to the current session.
+    ///
+    pub fn add_entry(&mut self, history_entry: &HistoryEntry) {
+        self.entries.push(history_entry.clone());
+    }
+
+    /// Returns a concatination of all previous entries and all current entries.
+    ///
+    pub fn get_entries(&self) -> Vec<HistoryEntry> {
+        let mut total_entries = self.previous_entries.clone();
+        total_entries.extend_from_slice(&self.entries);
+
+        total_entries
     }
 
     /// Get the path to the theme file, given the default theme filename.
@@ -188,6 +395,39 @@ impl Session {
 
         Ok(())
     }
+
+    /// Create a history bincode from a session
+    ///
+    pub fn create_history_bincode(&self) -> HistoryBincode {
+        HistoryBincode {
+            version: self.version.clone(),
+            session_start: self.session_start,
+            session_uuid: self.session_uuid,
+            decimal_places: self.decimal_places,
+            session_vartable: self.vartable.clone(),
+            entries: self.entries.clone(),
+        }
+    }
+
+    /// Update the history file to reflect the current session
+    ///
+    pub fn update_file(&mut self) -> Result<(), Box<dyn Error>> {
+        let history_bincode = self.create_history_bincode();
+
+        let data = history_bincode.to_vec()?;
+
+        // Create the file if it doesn't exist yet, clear it, and write the bincode
+        let mut file = File::options()
+            .read(false)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&self.history_file_path)?;
+
+        file.write_all(&data)?;
+
+        Ok(())
+    }
 }
 
 /// Default number of decimal places to render. Does not affect precision of calculations.
@@ -225,3 +465,114 @@ borders = "simple"
 
     highlight   = "#44475a"
 "##;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser;
+    use serial_test::*;
+
+    const TWOPTWO: &str = "2 + 2";
+
+    // Test the creation of a history manager
+    #[test]
+    #[serial]
+    fn test_new_session() {
+        // create a test session
+        let mut session = Session::_new_test().unwrap();
+
+        session.init().unwrap();
+
+        // File should not exist yet!
+        assert!(!&session.history_file_path.exists());
+
+        // There should be no previous entries!
+        assert_eq!(session.previous_entries.len(), 0);
+
+        // There should also be no entries in the current bincode!
+        assert_eq!(session.entries.len(), 0);
+
+        session._test_purge().unwrap();
+    }
+
+    // Test adding entries to the entry manager
+    #[test]
+    #[serial]
+    fn test_add_entry_history_manager() {
+        // create a test session
+        let mut session = Session::_new_test().unwrap();
+
+        session.init().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO, &mut session.vartable).unwrap();
+
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+
+        session.add_entry(&history_entry);
+
+        // File should still not exist!
+        assert!(!session.history_file_path.exists());
+
+        // First entry should equal our expression!
+        assert_eq!(session.get_entries()[0].to_string(), TWOPTWO);
+
+        session._test_purge().unwrap();
+    }
+
+    // Test updating history files
+    #[test]
+    #[serial]
+    fn test_update_file_history_manager() {
+        // create a test session
+        let mut session = Session::_new_test().unwrap();
+
+        session.init().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO, &mut session.vartable).unwrap();
+
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+
+        session.add_entry(&history_entry);
+
+        session.update_file().unwrap();
+
+        // File should now exist!
+        assert!(&session.history_file_path.exists());
+
+        // Check to make sure the bincode was written to correctly
+        assert_eq!(
+            &session.create_history_bincode(),
+            &HistoryBincode::from_slice(&fs::read(&session.history_file_path).unwrap()).unwrap()
+        );
+
+        // Clean up!
+        session._test_purge().unwrap();
+    }
+
+    // Test retrieving history from history files
+    #[test]
+    #[serial]
+    fn test_retrive_history_files() {
+        // create a test session
+        let mut session1 = Session::_new_test().unwrap();
+
+        session1.init().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO, &mut session1.vartable).unwrap();
+
+        let history_entry = HistoryEntry::new(&expression, session1.decimal_places);
+
+        session1.add_entry(&history_entry);
+
+        session1.update_file().unwrap();
+
+        let mut session2 = Session::_new_test().unwrap();
+
+        session2.init().unwrap();
+
+        // Make sure the previous entries of the second manager instance are equal to the current entries of the first manager instance
+        assert_eq!(session2.previous_entries, session1.entries);
+
+        session1._test_purge().unwrap();
+    }
+}

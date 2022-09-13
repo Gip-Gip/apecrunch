@@ -40,7 +40,7 @@ struct Args {
 /// Placeholder main function.
 ///
 fn main() {
-    let mut session = Session::new();
+    let mut session = Session::new().unwrap();
 
     session.init().unwrap();
 

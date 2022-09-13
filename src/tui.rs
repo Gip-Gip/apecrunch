@@ -18,8 +18,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::history::HistoryEntry;
-use crate::history::HistoryManager;
+use crate::session::HistoryEntry;
 use crate::session::Session;
 use cursive::view::Nameable;
 use cursive::view::Selector;
@@ -72,7 +71,7 @@ impl Tui {
     ///
     /// Returns an error if there is one.
     ///
-    pub fn new(mut session: Session) -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: Session) -> Result<Self, Box<dyn Error>> {
         // Create a new Cursive instance.
         let cursive = Cursive::new();
 
@@ -82,7 +81,6 @@ impl Tui {
 
         let cache = TuiCache {
             entry_bar_cursor_pos: 0,
-            history_manager: HistoryManager::new(&mut session)?,
             session: session,
         };
 
@@ -139,7 +137,7 @@ impl Tui {
             .h_align(HAlign::Left)
             .v_align(VAlign::Top);
 
-        for (i, entry) in cache.history_manager.get_entries().iter().enumerate() {
+        for (i, entry) in cache.session.get_entries().iter().enumerate() {
             history_list.add_item(&entry.to_string(), i);
         }
 
@@ -244,12 +242,12 @@ impl Tui {
         };
 
         let entry = &HistoryEntry::new(&result, cache.session.decimal_places);
-        let index = cache.history_manager.get_entries().len();
+        let index = cache.session.get_entries().len();
 
-        cache.history_manager.add_entry(&entry);
+        cache.session.add_entry(&entry);
         history.add_item(entry.to_string(), index);
 
-        if let Result::Err(error) = cache.history_manager.update_file(&cache.session) {
+        if let Result::Err(error) = cache.session.update_file() {
             Self::nonfatal_error_dialog(cursive, error);
             return;
         }
@@ -284,7 +282,7 @@ impl Tui {
         let mut curser_pos = cache.entry_bar_cursor_pos;
 
         // Get the selected history entry.
-        let entry = &cache.history_manager.get_entries()[index]
+        let entry = &cache.session.get_entries()[index]
             .render_without_equality(cache.session.decimal_places);
 
         // Insert the selected history entry into the entry bar at the cursor position.
@@ -323,6 +321,5 @@ impl Tui {
 #[derive(Debug, Clone)]
 struct TuiCache {
     pub entry_bar_cursor_pos: usize,
-    pub history_manager: HistoryManager,
     pub session: Session,
 }

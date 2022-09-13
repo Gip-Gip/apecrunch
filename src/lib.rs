@@ -18,7 +18,6 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-pub mod history;
 pub mod number;
 pub mod op_engine;
 pub mod parser;
