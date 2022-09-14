@@ -141,8 +141,10 @@ impl Tui {
             history_list.add_item(&entry.to_string(), i);
         }
 
-        // Set the selection to the bottom element
-        history_list.set_selection(history_list.len() - 1); // Ignore the callback, we don't need to do anything...
+        // Set the selection to the bottom element, if there are any elements in the list
+        if history_list.len() > 0 {
+            history_list.set_selection(history_list.len() - 1); // Ignore the callback, we don't need to do anything...
+        }
 
         let mut history_scroll = ScrollView::new(history_list.with_name(TUI_HISTORY_ID));
 
@@ -240,7 +242,7 @@ impl Tui {
             }
         };
 
-        let entry = &HistoryEntry::new(&result, cache.session.decimal_places);
+        let entry = &HistoryEntry::new(&result, &cache.session);
         let index = cache.session.get_entries().len();
 
         cache.session.add_entry(&entry);
@@ -282,7 +284,7 @@ impl Tui {
 
         // Get the selected history entry.
         let entry = &cache.session.get_entries()[index]
-            .render_without_equality(cache.session.decimal_places);
+            .render_without_equality(&cache.session);
 
         // Insert the selected history entry into the entry bar at the cursor position.
         let left = &entry_bar_content[..curser_pos];

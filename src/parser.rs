@@ -18,6 +18,8 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use std::str::FromStr;
+use uuid::Uuid;
 use crate::session::Session;
 use crate::number::Number;
 use crate::variable::VarTable;
@@ -49,6 +51,8 @@ pub enum Token {
     Equality(Box<Token>, Box<Token>),
     /// Parenthesis token, parsed from "()".
     Parenthesis(Box<Token>),
+    /// Answer token, parsed from an inverse offset preceded by an @
+    Answer(Uuid),
     /// Number token, parsed from any number 0-9.
     Number(Number),
     /// Variable token, holds the symbol of a variable along with the value at parsing
@@ -64,39 +68,46 @@ pub enum Token {
 impl Token {
     /// Converts entire tokenized expressions into strings recursively.
     ///
-    pub fn to_string(&self, prec: u32) -> String {
+    pub fn to_string(&self, session: &Session) -> String {
         match self {
             Token::Exponent(left, right) => {
-                format!("{}^{}", left.to_string(prec), right.to_string(prec))
+                format!("{}^{}", left.to_string(session), right.to_string(session))
             }
             Token::Multiply(left, right) => {
-                format!("{} * {}", left.to_string(prec), right.to_string(prec))
+                format!("{} * {}", left.to_string(session), right.to_string(session))
             }
             Token::Divide(left, right) => {
-                format!("{} / {}", left.to_string(prec), right.to_string(prec))
+                format!("{} / {}", left.to_string(session), right.to_string(session))
             }
             Token::Add(left, right) => {
-                format!("{} + {}", left.to_string(prec), right.to_string(prec))
+                format!("{} + {}", left.to_string(session), right.to_string(session))
             }
             Token::Subtract(left, right) => {
-                format!("{} - {}", left.to_string(prec), right.to_string(prec))
+                format!("{} - {}", left.to_string(session), right.to_string(session))
             }
             Token::Equality(left, right) => {
-                format!("{} = {}", left.to_string(prec), right.to_string(prec))
+                format!("{} = {}", left.to_string(session), right.to_string(session))
             }
             Token::Parenthesis(expression) => {
-                format!("( {} )", expression.to_string(prec))
+                format!("( {} )", expression.to_string(session))
             }
-            Token::Number(number) => number.to_string(prec),
+            Token::Answer(uuid) => {
+                if let Some(inv_index) = session.get_inv_index_from_uuid(uuid){
+                    return format!("@{}", inv_index)
+                }
+
+                "@!".to_string()
+            }
+            Token::Number(number) => number.to_string(session.decimal_places),
             Token::Negative(expression) => {
-                format!("-{}", expression.to_string(prec))
+                format!("-{}", expression.to_string(session))
             }
             Token::Variable(variable) => {
                 format!("{}", variable.id)
             }
             Token::Boolean(boolean) => boolean.to_string(),
             Token::Store(id, expression) => {
-                format!("{} -> {}", expression.to_string(prec), id)
+                format!("{} -> {}", expression.to_string(session), id)
             }
         }
     }
@@ -106,7 +117,7 @@ impl Token {
 ///
 /// **NOT PUBLIC.**
 ///
-const ORDER_OF_OPS: [&str; 8] = ["->", "=", "-", "+", "/", "*", NEG_SYMBOL, "^"];
+const ORDER_OF_OPS: [&str; 9] = ["->", "=", "-", "+", "/", "*", NEG_SYMBOL, "^", "@"];
 
 /// Internal symbol for -1, for parser uses only
 ///
@@ -149,7 +160,7 @@ pub fn parse_str(string: &str, session: &mut Session) -> Result<Token, Box<dyn E
 fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
     // Regex definitions n stuff
     lazy_static! {
-        static ref VAR_NAMECHECK_RE: Regex = Regex::new(r"[=\-\+/\*\^>\u0026]").unwrap(); // Used to see if a variable name is valid; it shouldn't contain any operators
+        static ref VAR_NAMECHECK_RE: Regex = Regex::new(r"[@=\-\+/\*\^>\u0026]").unwrap(); // Used to see if a variable name is valid; it shouldn't contain any operators
     }
 
     for opcode in ORDER_OF_OPS {
@@ -160,8 +171,8 @@ fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
             // Split the string at the operator...
             let splitpoint = op_index.unwrap();
 
-            // If there is nothing to the left or right of the operator, produce an error(unless the operator is the negative sign)...
-            if splitpoint + 1 == string.len() || (splitpoint == 0 && opcode != NEG_SYMBOL) {
+            // If there is nothing to the left or right of the operator, produce an error(unless the operator is the negative sign or an answer sign)...
+            if splitpoint + 1 == string.len() || (splitpoint == 0 && (opcode != NEG_SYMBOL && opcode != "@")) {
                 bail!("Incomplete Expression: {}", string);
             }
 
@@ -176,6 +187,13 @@ fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
 
             // Parse the left and right sides recursively...
             return match opcode {
+                "@" => {
+                    if let Some(entry) = session.get_entry_inv_index(usize::from_str(&right)?) {
+                        return Ok(Token::Answer(entry.entry_uuid))
+                    }
+
+                    bail!("Invalid answer {}!", right);
+                }
                 "^" => Ok(Token::Exponent(
                     Box::new(parse(&left, session)?),
                     Box::new(parse(&right, session)?),

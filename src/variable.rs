@@ -129,15 +129,17 @@ impl VarTable {
 
 #[cfg(test)]
 mod tests {
+    use crate::session::Session;
     use super::*;
     use crate::number::Number;
 
     #[test]
     fn test_var() {
         let var = Variable::new("x", Token::Number(Number::neg_one()));
+        let session = Session::_new_test().unwrap();
 
         assert_eq!(var.id, "x");
-        assert_eq!(var.tokens.to_string(0), "-1");
+        assert_eq!(var.tokens.to_string(&session), "-1");
     }
 
     #[test]

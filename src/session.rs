@@ -46,9 +46,9 @@ pub const HISTORY_COMPAT_VERS: [&str; 2] = ["0.0.2", "0.0.3"];
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HistoryEntry {
     /// UUID of the entry.
-    entry_uuid: Uuid,
+    pub entry_uuid: Uuid,
     /// Parser tokens of the entry, basically the entire expression parsed down into it's most basic form
-    expression: Token,
+    pub expression: Token,
     /// Rendition of the entry's expression at the time of calculation
     rendition: String,
 }
@@ -56,13 +56,13 @@ pub struct HistoryEntry {
 impl HistoryEntry {
     /// Creates a new entry struct from parser tokens and the desired amount of decimal places to render.
     ///
-    pub fn new(expression: &Token, decimal_places: u32) -> Self {
+    pub fn new(expression: &Token, session: &Session) -> Self {
         let entry_uuid = Uuid::new_v4();
 
         Self {
             entry_uuid: entry_uuid,
             expression: expression.clone(),
-            rendition: expression.to_string(decimal_places),
+            rendition: expression.to_string(session),
         }
     }
 
@@ -72,16 +72,26 @@ impl HistoryEntry {
         self.rendition.clone()
     }
 
+    /// Gets the entry without the equality
+    /// 
+    pub fn without_equality(&self) -> &Token {
+        if let Token::Equality(left, _right) = &self.expression {
+            return left;
+        }
+
+        &self.expression
+    }
+
     /// Renders the entry without an equal sign, nor everything right of it.
     ///
     /// Just returns the expression unmodified if there is no equal sign.
     ///
-    pub fn render_without_equality(&self, decimal_places: u32) -> String {
+    pub fn render_without_equality(&self, session: &Session) -> String {
         if let Token::Equality(left, _right) = &self.expression {
-            return left.to_string(decimal_places);
+            return left.to_string(session);
         }
 
-        self.expression.to_string(decimal_places)
+        self.expression.to_string(session)
     }
 }
 
@@ -382,12 +392,12 @@ impl Session {
 
     /// Gets an entry's inverse index from a given UUID
     /// 
-    pub fn get_inv_index_from_uuid(&self, uuid: Uuid) -> Option<usize> {
-        if let Some(index) = self.entries.iter().position(|entry| entry.entry_uuid == uuid) {
+    pub fn get_inv_index_from_uuid(&self, uuid: &Uuid) -> Option<usize> {
+        if let Some(index) = self.entries.iter().position(|entry| &entry.entry_uuid == uuid) {
             return Some(self.entries.len() - index - 1) // Subtract 1 from the index, since the length is always 1 greater than the maximum index value
         }
 
-        if let Some(index) = self.previous_entries.iter().position(|entry| entry.entry_uuid == uuid) {
+        if let Some(index) = self.previous_entries.iter().position(|entry| &entry.entry_uuid == uuid) {
             return Some(self.previous_entries.len() - (index - 1 - self.entries.len())) // Ditto
         }
 
@@ -396,12 +406,12 @@ impl Session {
 
     /// Gets an entry from a given UUID
     /// 
-    pub fn get_entry_from_uuid<'a>(&'a self, uuid: Uuid) -> Option<&'a HistoryEntry> {
-        if let Some(entry) = self.entries.iter().find(|entry| entry.entry_uuid == uuid) {
+    pub fn get_entry_from_uuid<'a>(&'a self, uuid: &Uuid) -> Option<&'a HistoryEntry> {
+        if let Some(entry) = self.entries.iter().find(|entry| &entry.entry_uuid == uuid) {
             return Some(entry)
         }
 
-        if let Some(entry) = self.previous_entries.iter().find(|entry| entry.entry_uuid == uuid) {
+        if let Some(entry) = self.previous_entries.iter().find(|entry| &entry.entry_uuid == uuid) {
             return Some(entry)
         }
         todo!()
@@ -557,7 +567,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+        let history_entry = HistoryEntry::new(&expression, &session);
 
         session.add_entry(&history_entry);
 
@@ -581,7 +591,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+        let history_entry = HistoryEntry::new(&expression, &session);
 
         session.add_entry(&history_entry);
 
@@ -611,7 +621,7 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO, &mut session1).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression, session1.decimal_places);
+        let history_entry = HistoryEntry::new(&expression, &session1);
 
         session1.add_entry(&history_entry);
 
@@ -638,11 +648,11 @@ mod tests {
 
         let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
 
-        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+        let history_entry = HistoryEntry::new(&expression, &session);
 
         session.add_entry(&history_entry);
 
-        let history_entry_2_inv_index = session.get_inv_index_from_uuid(history_entry.entry_uuid).unwrap();
+        let history_entry_2_inv_index = session.get_inv_index_from_uuid(&history_entry.entry_uuid).unwrap();
 
         eprintln!("index = {}", history_entry_2_inv_index);
 

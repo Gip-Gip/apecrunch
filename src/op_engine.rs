@@ -20,9 +20,9 @@
 
 use crate::session::Session;
 use crate::parser::Token;
-use crate::variable::VarTable;
 use crate::variable::Variable;
 use std::error::Error;
+use simple_error::*;
 
 /// Simplifies the given parser tokens and asserts they are equal to the unsimplified parser tokens, returning both in an equality token.alloc
 ///
@@ -134,6 +134,14 @@ pub fn simplify(
 
         Token::Parenthesis(expression) => simplify(expression, session),
 
+        Token::Answer(uuid) => {
+            if let Some(entry) = session.get_entry_from_uuid(uuid) {
+                let entry = entry.clone();
+                return simplify(entry.without_equality(), session)
+            }
+            bail!("Invalid entry uuid {}!", uuid);
+        }
+
         Token::Number(_number) => Ok(token.clone()),
 
         Token::Boolean(_truth) => Ok(token.clone()),
@@ -165,7 +173,6 @@ mod tests {
     use crate::session::Session;
 use super::*;
     use crate::parser;
-    use crate::variable::VarTable;
 
     const TWO: &str = "2";
     const TWOPTWO: &str = "2 + 2";

@@ -91,7 +91,7 @@ use apecrunch::op_engine;
 
         let result = op_engine::get_equality(&tokens, &mut session).unwrap();
 
-        assert_eq!(result.to_string(0), expected_result);
+        assert_eq!(result.to_string(&session), expected_result);
     }
 
     #[test]
@@ -106,7 +106,7 @@ use apecrunch::op_engine;
 
         let result = op_engine::get_equality(&tokens, &mut session).unwrap();
 
-        assert_eq!(result.to_string(13), expected_result);
+        assert_eq!(result.to_string(&session), expected_result);
     }
 
     #[test]
@@ -129,7 +129,7 @@ use apecrunch::op_engine;
 
         let result2 = op_engine::get_equality(&tokens2, &mut session).unwrap();
 
-        assert_eq!(result1.to_string(1), expected_result1);
-        assert_eq!(result2.to_string(30), expected_result2);
+        assert_eq!(result1.to_string(&session), expected_result1);
+        assert_eq!(result2.to_string(&session), expected_result2);
     }
 }
