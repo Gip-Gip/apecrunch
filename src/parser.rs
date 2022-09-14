@@ -18,6 +18,7 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::session::Session;
 use crate::number::Number;
 use crate::variable::VarTable;
 use crate::variable::Variable;
@@ -117,7 +118,7 @@ const NEG_SYMBOL: &str = "\x26";
 ///
 /// Throws a simple error if the expression is empty.
 ///
-pub fn parse_str(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+pub fn parse_str(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
     // Regex definitions n stuff
     lazy_static! {
         static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[(=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
@@ -134,7 +135,7 @@ pub fn parse_str(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn
         .replace_all(&cleaned_string, format!("$a{}", NEG_SYMBOL))
         .to_string();
 
-    Ok(parse(&cleaned_string, vartable)?)
+    Ok(parse(&cleaned_string, session)?)
 }
 
 /// Parses a string recursively, breaking it down into Tokens.
@@ -145,7 +146,7 @@ pub fn parse_str(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn
 ///
 /// **NOT PUBLIC. USE parse_str() INSTEAD.**
 ///
-fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>> {
+fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
     // Regex definitions n stuff
     lazy_static! {
         static ref VAR_NAMECHECK_RE: Regex = Regex::new(r"[=\-\+/\*\^>\u0026]").unwrap(); // Used to see if a variable name is valid; it shouldn't contain any operators
@@ -176,29 +177,29 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
             // Parse the left and right sides recursively...
             return match opcode {
                 "^" => Ok(Token::Exponent(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
                 "-" => Ok(Token::Subtract(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
                 "+" => Ok(Token::Add(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
                 "/" => Ok(Token::Divide(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
                 "*" => Ok(Token::Multiply(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
-                NEG_SYMBOL => Ok(Token::Negative(Box::new(parse(&right, vartable)?))),
+                NEG_SYMBOL => Ok(Token::Negative(Box::new(parse(&right, session)?))),
                 "=" => Ok(Token::Equality(
-                    Box::new(parse(&left, vartable)?),
-                    Box::new(parse(&right, vartable)?),
+                    Box::new(parse(&left, session)?),
+                    Box::new(parse(&right, session)?),
                 )),
                 "->" => {
                     // Make sure the variable doesn't contain any operators
@@ -206,7 +207,7 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
                         bail!("Invalid variable name {}!", right);
                     }
 
-                    Ok(Token::Store(right, Box::new(parse(&left, vartable)?)))
+                    Ok(Token::Store(right, Box::new(parse(&left, session)?)))
                 }
                 // It is entrely possible I am a terrible programmer and I forgot to implement all the operators in the ORDER_OF_OPS table...
                 _ => {
@@ -226,14 +227,14 @@ fn parse(string: &str, vartable: &mut VarTable) -> Result<Token, Box<dyn Error>>
 
     // If the string is a variable...
     if string.chars().next().unwrap().is_alphabetic() {
-        return Ok(Token::Variable(Box::new(vartable.get(string)?)));
+        return Ok(Token::Variable(Box::new(session.vartable.get(string)?)));
     }
 
     // If the string is an expression surrounded in parenthesis...
     if string.chars().next().unwrap() == '(' {
         return Ok(Token::Parenthesis(Box::new(parse(
             &string[1..string.len() - 1],
-            vartable,
+            session,
         )?)));
     }
 
@@ -326,9 +327,9 @@ mod tests {
     #[test]
     fn test_parser_num() {
         let tokenized_expression_ref = Token::Number(Number::from_str(TWO).unwrap());
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
-        let tokenized_expression_res = parse_str(TWO, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(TWO, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -343,13 +344,13 @@ mod tests {
         )));
         let varvalue = Token::Number(Number::neg_one());
 
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let variable = Variable::new("x", varvalue);
 
-        vartable.add(variable).unwrap();
+        session.vartable.add(variable).unwrap();
 
-        let tokenized_expression_res = parse_str(X, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(X, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -358,12 +359,12 @@ mod tests {
     // Test to make sure the parser can reject bad variable names
     #[test]
     fn test_parser_var_name_check() {
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         for opcode in ORDER_OF_OPS {
             let bad_variable: String = format!("2->foo{}bar", opcode);
 
-            parse_str(&bad_variable, &mut vartable).unwrap_err();
+            parse_str(&bad_variable, &mut session).unwrap_err();
         }
     }
 
@@ -371,14 +372,14 @@ mod tests {
     #[test]
     fn test_parser_add() {
         let expression = TWOPTWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Add(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -388,14 +389,14 @@ mod tests {
     #[test]
     fn test_parser_sub() {
         let expression = TWOSTWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Subtract(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -405,14 +406,14 @@ mod tests {
     #[test]
     fn test_parser_mul() {
         let expression = TWOMTWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Multiply(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -422,14 +423,14 @@ mod tests {
     #[test]
     fn test_parser_div() {
         let expression = TWODTWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Divide(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -439,14 +440,14 @@ mod tests {
     #[test]
     fn test_parser_exp() {
         let expression = TWOETWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Exponent(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);
@@ -456,14 +457,14 @@ mod tests {
     #[test]
     fn test_parser_eql() {
         let expression = TWOQTWO;
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
         let tokenized_expression_ref = Token::Equality(
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
             Box::new(Token::Number(Number::from_str(TWO).unwrap())),
         );
 
-        let tokenized_expression_res = parse_str(expression, &mut vartable).unwrap();
+        let tokenized_expression_res = parse_str(expression, &mut session).unwrap();
 
         // Make sure the reference is equal to the result
         assert_eq!(tokenized_expression_ref, tokenized_expression_res);

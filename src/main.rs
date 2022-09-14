@@ -75,19 +75,21 @@ fn main() {
 // Test general user things
 #[cfg(test)]
 mod tests {
-    use apecrunch::op_engine;
+    use apecrunch::session::Session;
+use apecrunch::op_engine;
     use apecrunch::parser;
-    use apecrunch::variable::VarTable;
 
     #[test]
     fn test_two_plus_two() {
         let user_string = "2+2";
         let expected_result = "2 + 2 = 4";
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
-        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
+        let tokens = parser::parse_str(user_string, &mut session).unwrap();
 
-        let result = op_engine::get_equality(&tokens, &mut vartable, 0).unwrap();
+        session.decimal_places = 0;
+
+        let result = op_engine::get_equality(&tokens, &mut session).unwrap();
 
         assert_eq!(result.to_string(0), expected_result);
     }
@@ -96,11 +98,13 @@ mod tests {
     fn test_order_of_ops() {
         let user_string = "1+2*3-4/-5^(6+7)";
         let expected_result = "1 + 2 * 3 - 4 / -5^( 6 + 7 ) = 7.0000000032768";
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
-        let tokens = parser::parse_str(user_string, &mut vartable).unwrap();
+        let tokens = parser::parse_str(user_string, &mut session).unwrap();
 
-        let result = op_engine::get_equality(&tokens, &mut vartable, 13).unwrap();
+        session.decimal_places = 13;
+
+        let result = op_engine::get_equality(&tokens, &mut session).unwrap();
 
         assert_eq!(result.to_string(13), expected_result);
     }
@@ -111,15 +115,19 @@ mod tests {
         let expected_result1 = "16^0.5 = 4";
         let user_string2 = "999999999^(2/3)";
         let expected_result2 = "999999999^( 2 / 3 ) = 999999.999333333333222222222172839506...";
-        let mut vartable = VarTable::new();
+        let mut session = Session::_new_test().unwrap();
 
-        let tokens1 = parser::parse_str(user_string1, &mut vartable).unwrap();
+        let tokens1 = parser::parse_str(user_string1, &mut session).unwrap();
 
-        let result1 = op_engine::get_equality(&tokens1, &mut vartable, 1).unwrap();
+        session.decimal_places = 1;
 
-        let tokens2 = parser::parse_str(user_string2, &mut vartable).unwrap();
+        let result1 = op_engine::get_equality(&tokens1, &mut session).unwrap();
 
-        let result2 = op_engine::get_equality(&tokens2, &mut vartable, 30).unwrap();
+        let tokens2 = parser::parse_str(user_string2, &mut session).unwrap();
+
+        session.decimal_places = 30;
+
+        let result2 = op_engine::get_equality(&tokens2, &mut session).unwrap();
 
         assert_eq!(result1.to_string(1), expected_result1);
         assert_eq!(result2.to_string(30), expected_result2);

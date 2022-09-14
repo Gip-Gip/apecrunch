@@ -220,7 +220,7 @@ impl Tui {
         //
 
         // parse the text in the entry box
-        let tokens = match parser::parse_str(text, &mut cache.session.vartable) {
+        let tokens = match parser::parse_str(text, &mut cache.session) {
             Ok(tokens) => tokens,
             Err(error) => {
                 Self::nonfatal_error_dialog(cursive, error);
@@ -231,8 +231,7 @@ impl Tui {
         // Go through the tokens an operate on them, getting an equality.
         let result = match op_engine::get_equality(
             &tokens,
-            &mut cache.session.vartable,
-            cache.session.decimal_places,
+            &mut cache.session
         ) {
             Ok(result) => result,
             Err(error) => {

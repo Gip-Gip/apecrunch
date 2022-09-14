@@ -34,6 +34,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
+use std::cmp::Ordering;
 use uuid::Uuid;
 
 /// Versions of history files that this version of apecrunch is compatible with
@@ -356,6 +357,56 @@ impl Session {
         total_entries
     }
 
+    /// Gets an entry from the inverse index of the entry
+    /// 
+    pub fn get_entry_inv_index<'a>(&'a self, inverse_index: usize) -> Option<&'a HistoryEntry> {
+        if inverse_index >= self.previous_entries.len() + self.entries.len() {
+            return None
+        }
+
+        let inverse_index = inverse_index + 1; // Add 1 to the index, since the length is always 1 greater than the maximum index value
+
+        let (entries, index) = match inverse_index.cmp(&self.entries.len()) {
+            Ordering::Greater => {
+                let index = &self.previous_entries.len() - (inverse_index - &self.entries.len());
+                (&self.previous_entries, index)
+            }
+            _ => {
+                let index = &self.entries.len() - inverse_index;
+                (&self.entries, index)
+            }
+        };
+
+        Some(&entries[index])
+    }
+
+    /// Gets an entry's inverse index from a given UUID
+    /// 
+    pub fn get_inv_index_from_uuid(&self, uuid: Uuid) -> Option<usize> {
+        if let Some(index) = self.entries.iter().position(|entry| entry.entry_uuid == uuid) {
+            return Some(self.entries.len() - index - 1) // Subtract 1 from the index, since the length is always 1 greater than the maximum index value
+        }
+
+        if let Some(index) = self.previous_entries.iter().position(|entry| entry.entry_uuid == uuid) {
+            return Some(self.previous_entries.len() - (index - 1 - self.entries.len())) // Ditto
+        }
+
+        None
+    }
+
+    /// Gets an entry from a given UUID
+    /// 
+    pub fn get_entry_from_uuid<'a>(&'a self, uuid: Uuid) -> Option<&'a HistoryEntry> {
+        if let Some(entry) = self.entries.iter().find(|entry| entry.entry_uuid == uuid) {
+            return Some(entry)
+        }
+
+        if let Some(entry) = self.previous_entries.iter().find(|entry| entry.entry_uuid == uuid) {
+            return Some(entry)
+        }
+        todo!()
+    }
+
     /// Get the path to the theme file, given the default theme filename.
     ///
     pub fn get_theme_file_path(&self) -> PathBuf {
@@ -498,13 +549,13 @@ mod tests {
     // Test adding entries to the entry manager
     #[test]
     #[serial]
-    fn test_add_entry_history_manager() {
+    fn test_add_entry_session() {
         // create a test session
         let mut session = Session::_new_test().unwrap();
 
         session.init().unwrap();
 
-        let expression = parser::parse_str(TWOPTWO, &mut session.vartable).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
@@ -522,13 +573,13 @@ mod tests {
     // Test updating history files
     #[test]
     #[serial]
-    fn test_update_file_history_manager() {
+    fn test_update_file_session() {
         // create a test session
         let mut session = Session::_new_test().unwrap();
 
         session.init().unwrap();
 
-        let expression = parser::parse_str(TWOPTWO, &mut session.vartable).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session.decimal_places);
 
@@ -552,13 +603,13 @@ mod tests {
     // Test retrieving history from history files
     #[test]
     #[serial]
-    fn test_retrive_history_files() {
+    fn test_retrive_session() {
         // create a test session
         let mut session1 = Session::_new_test().unwrap();
 
         session1.init().unwrap();
 
-        let expression = parser::parse_str(TWOPTWO, &mut session1.vartable).unwrap();
+        let expression = parser::parse_str(TWOPTWO, &mut session1).unwrap();
 
         let history_entry = HistoryEntry::new(&expression, session1.decimal_places);
 
@@ -574,5 +625,31 @@ mod tests {
         assert_eq!(session2.previous_entries, session1.entries);
 
         session1._test_purge().unwrap();
+    }
+
+    // Test using the get by inverse index and get by uuid functions
+    #[test]
+    #[serial]
+    fn test_retrieve_by_inv_index() {
+        // create a test session
+        let mut session = Session::_new_test().unwrap();
+
+        session.init().unwrap();
+
+        let expression = parser::parse_str(TWOPTWO, &mut session).unwrap();
+
+        let history_entry = HistoryEntry::new(&expression, session.decimal_places);
+
+        session.add_entry(&history_entry);
+
+        let history_entry_2_inv_index = session.get_inv_index_from_uuid(history_entry.entry_uuid).unwrap();
+
+        eprintln!("index = {}", history_entry_2_inv_index);
+
+        let history_entry_2 = session.get_entry_inv_index(history_entry_2_inv_index).unwrap();
+
+        assert_eq!(history_entry_2, &history_entry);
+
+        session._test_purge().unwrap();
     }
 }
