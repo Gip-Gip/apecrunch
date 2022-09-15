@@ -7,14 +7,15 @@
 ## **TO-DO:**
 
  - [ ] Add dedicated square root function
- - [ ] Add ability to retrieve the answers of previous expressions
  - [ ] Add built in functions like sin, cos, tan, etc.
  - [ ] Make README pretty
 
 ## **Changelog:**
 
 ### **Version 0.0.3**
+ - [X] **Added ability to retrieve answers with Ctrl+A** *(commit 44f0573)*
  - [X] **Fixed bug where inserting a previous history entry would cause a panic** *(commit 5a0152e)*
+ - [X] **Fixed history list so it starts with the last computation selected** *(commit 4f32da1)*
 
 ### **Version 0.0.2**
 - [X] **Added good roots** *(commits 204f105/032b169/c98ee95/0298679/c980033)*
