@@ -8,6 +8,7 @@ keywords = ["SpeedCrunch", "calculator", "tui", "math", "cli"]
 catagories = ["command-line-utilities", "science", "mathematics"]
 repository = "https://github.com/Gip-Gip/apecrunch"
 readme = "README.md"
+homepage = "https://openapeshop.org/software/apecrunch/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
