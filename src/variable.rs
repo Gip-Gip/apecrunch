@@ -129,9 +129,9 @@ impl VarTable {
 
 #[cfg(test)]
 mod tests {
-    use crate::session::Session;
     use super::*;
     use crate::number::Number;
+    use crate::session::Session;
 
     #[test]
     fn test_var() {

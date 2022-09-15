@@ -18,20 +18,17 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::session::Session;
 use crate::parser::Token;
+use crate::session::Session;
 use crate::variable::Variable;
-use std::error::Error;
 use simple_error::*;
+use std::error::Error;
 
 /// Simplifies the given parser tokens and asserts they are equal to the unsimplified parser tokens, returning both in an equality token.alloc
 ///
 /// For example, 2+2 would be equal to 4.
 ///
-pub fn get_equality(
-    tokens: &Token,
-    session: &mut Session
-) -> Result<Token, Box<dyn Error>> {
+pub fn get_equality(tokens: &Token, session: &mut Session) -> Result<Token, Box<dyn Error>> {
     Ok(Token::Equality(
         Box::new(tokens.clone()),
         Box::new(simplify(tokens, session)?),
@@ -42,10 +39,7 @@ pub fn get_equality(
 ///
 /// For example, 2+2 would simplify into 4.
 ///
-pub fn simplify(
-    token: &Token,
-    session: &mut Session,
-) -> Result<Token, Box<dyn Error>> {
+pub fn simplify(token: &Token, session: &mut Session) -> Result<Token, Box<dyn Error>> {
     match token {
         // Almost all of these match cases are the same, understand this one and you understand them all...
         Token::Multiply(left, right) => {
@@ -115,7 +109,9 @@ pub fn simplify(
 
             if let Token::Number(left_number) = &left_result {
                 if let Token::Number(right_number) = &right_result {
-                    return Ok(Token::Number(left_number.exponent(&right_number, session.decimal_places)));
+                    return Ok(Token::Number(
+                        left_number.exponent(&right_number, session.decimal_places),
+                    ));
                 }
             }
 
@@ -137,7 +133,7 @@ pub fn simplify(
         Token::Answer(uuid) => {
             if let Some(entry) = session.get_entry_from_uuid(uuid) {
                 let entry = entry.clone();
-                return simplify(entry.without_equality(), session)
+                return simplify(entry.without_equality(), session);
             }
             bail!("Invalid entry uuid {}!", uuid);
         }
@@ -170,9 +166,9 @@ pub fn simplify(
 
 #[cfg(test)]
 mod tests {
-    use crate::session::Session;
-use super::*;
+    use super::*;
     use crate::parser;
+    use crate::session::Session;
 
     const TWO: &str = "2";
     const TWOPTWO: &str = "2 + 2";

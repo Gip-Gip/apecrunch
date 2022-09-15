@@ -75,9 +75,9 @@ fn main() {
 // Test general user things
 #[cfg(test)]
 mod tests {
-    use apecrunch::session::Session;
-use apecrunch::op_engine;
+    use apecrunch::op_engine;
     use apecrunch::parser;
+    use apecrunch::session::Session;
 
     #[test]
     fn test_two_plus_two() {

@@ -18,11 +18,8 @@
 // ApeCrunch(in a file named COPYING).
 // If not, see <https://www.gnu.org/licenses/>.
 
-use std::str::FromStr;
-use uuid::Uuid;
-use crate::session::Session;
 use crate::number::Number;
-use crate::variable::VarTable;
+use crate::session::Session;
 use crate::variable::Variable;
 use lazy_static::*;
 use regex::Regex;
@@ -30,6 +27,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use simple_error::*;
 use std::error::Error;
+use std::str::FromStr;
+use uuid::Uuid;
 
 /// Represents either a single parser token or an entire tokenized expression.
 ///
@@ -92,8 +91,8 @@ impl Token {
                 format!("( {} )", expression.to_string(session))
             }
             Token::Answer(uuid) => {
-                if let Some(inv_index) = session.get_inv_index_from_uuid(uuid){
-                    return format!("@{}", inv_index)
+                if let Some(inv_index) = session.get_inv_index_from_uuid(uuid) {
+                    return format!("@{}", inv_index);
                 }
 
                 "@!".to_string()
@@ -172,7 +171,9 @@ fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
             let splitpoint = op_index.unwrap();
 
             // If there is nothing to the left or right of the operator, produce an error(unless the operator is the negative sign or an answer sign)...
-            if splitpoint + 1 == string.len() || (splitpoint == 0 && (opcode != NEG_SYMBOL && opcode != "@")) {
+            if splitpoint + 1 == string.len()
+                || (splitpoint == 0 && (opcode != NEG_SYMBOL && opcode != "@"))
+            {
                 bail!("Incomplete Expression: {}", string);
             }
 
@@ -189,7 +190,7 @@ fn parse(string: &str, session: &mut Session) -> Result<Token, Box<dyn Error>> {
             return match opcode {
                 "@" => {
                     if let Some(entry) = session.get_entry_inv_index(usize::from_str(&right)?) {
-                        return Ok(Token::Answer(entry.entry_uuid))
+                        return Ok(Token::Answer(entry.entry_uuid));
                     }
 
                     bail!("Invalid answer {}!", right);

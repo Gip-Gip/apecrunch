@@ -25,6 +25,7 @@ use lazy_static::*;
 use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
+use std::cmp::Ordering;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -34,7 +35,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
-use std::cmp::Ordering;
 use uuid::Uuid;
 
 /// Versions of history files that this version of apecrunch is compatible with
@@ -73,7 +73,7 @@ impl HistoryEntry {
     }
 
     /// Gets the entry without the equality
-    /// 
+    ///
     pub fn without_equality(&self) -> &Token {
         if let Token::Equality(left, _right) = &self.expression {
             return left;
@@ -368,10 +368,10 @@ impl Session {
     }
 
     /// Gets an entry from the inverse index of the entry
-    /// 
+    ///
     pub fn get_entry_inv_index<'a>(&'a self, inverse_index: usize) -> Option<&'a HistoryEntry> {
         if inverse_index >= self.previous_entries.len() + self.entries.len() {
-            return None
+            return None;
         }
 
         let inverse_index = inverse_index + 1; // Add 1 to the index, since the length is always 1 greater than the maximum index value
@@ -391,30 +391,50 @@ impl Session {
     }
 
     /// Gets an entry's inverse index from a given UUID
-    /// 
+    ///
     pub fn get_inv_index_from_uuid(&self, uuid: &Uuid) -> Option<usize> {
-        if let Some(index) = self.entries.iter().position(|entry| &entry.entry_uuid == uuid) {
-            return Some(self.entries.len() - index - 1) // Subtract 1 from the index, since the length is always 1 greater than the maximum index value
+        if let Some(index) = self
+            .entries
+            .iter()
+            .position(|entry| &entry.entry_uuid == uuid)
+        {
+            let inv_index_start = self.entries.len() - 1; // Subtract 1 since the maximum index value is always 1 less than the length
+            return Some(inv_index_start - index);
         }
 
-        if let Some(index) = self.previous_entries.iter().position(|entry| &entry.entry_uuid == uuid) {
-            return Some(self.previous_entries.len() - (index - 1 - self.entries.len())) // Ditto
+        if let Some(index) = self
+            .previous_entries
+            .iter()
+            .position(|entry| &entry.entry_uuid == uuid)
+        {
+            let inv_index_start = self.previous_entries.len() + self.entries.len() - 1;
+            return Some(inv_index_start - index);
         }
 
         None
     }
 
     /// Gets an entry from a given UUID
-    /// 
+    ///
     pub fn get_entry_from_uuid<'a>(&'a self, uuid: &Uuid) -> Option<&'a HistoryEntry> {
         if let Some(entry) = self.entries.iter().find(|entry| &entry.entry_uuid == uuid) {
-            return Some(entry)
+            return Some(entry);
         }
 
-        if let Some(entry) = self.previous_entries.iter().find(|entry| &entry.entry_uuid == uuid) {
-            return Some(entry)
+        if let Some(entry) = self
+            .previous_entries
+            .iter()
+            .find(|entry| &entry.entry_uuid == uuid)
+        {
+            return Some(entry);
         }
         todo!()
+    }
+
+    /// Gets the total count of all entries
+    ///
+    pub fn get_entry_count(&self) -> usize {
+        self.entries.len() + self.previous_entries.len()
     }
 
     /// Get the path to the theme file, given the default theme filename.
@@ -652,11 +672,15 @@ mod tests {
 
         session.add_entry(&history_entry);
 
-        let history_entry_2_inv_index = session.get_inv_index_from_uuid(&history_entry.entry_uuid).unwrap();
+        let history_entry_2_inv_index = session
+            .get_inv_index_from_uuid(&history_entry.entry_uuid)
+            .unwrap();
 
         eprintln!("index = {}", history_entry_2_inv_index);
 
-        let history_entry_2 = session.get_entry_inv_index(history_entry_2_inv_index).unwrap();
+        let history_entry_2 = session
+            .get_entry_inv_index(history_entry_2_inv_index)
+            .unwrap();
 
         assert_eq!(history_entry_2, &history_entry);
 

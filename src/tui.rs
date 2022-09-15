@@ -114,6 +114,9 @@ impl Tui {
         // Bind the escape key to cursive.quit()
         self.cursive
             .set_on_pre_event(Event::Key(Key::Esc), |cursive| cursive.quit());
+
+        self.cursive
+            .set_on_pre_event(Event::CtrlChar('a'), |cursive| Self::grab_answer(cursive));
     }
 
     /// Lay out all of the views.
@@ -133,12 +136,12 @@ impl Tui {
         //
 
         let mut history_list = SelectView::new()
-            .on_submit(|cursive, index| Self::history_on_select(cursive, *index))
+            .on_submit(|cursive, index| Self::history_on_submit(cursive, *index))
             .h_align(HAlign::Left)
             .v_align(VAlign::Top);
 
         for (i, entry) in cache.session.get_entries().iter().enumerate() {
-            history_list.add_item(&entry.to_string(), i);
+            history_list.add_item(&entry.to_string(), i); // Store everything in an inverse index
         }
 
         // Set the selection to the bottom element, if there are any elements in the list
@@ -231,10 +234,7 @@ impl Tui {
         };
 
         // Go through the tokens an operate on them, getting an equality.
-        let result = match op_engine::get_equality(
-            &tokens,
-            &mut cache.session
-        ) {
+        let result = match op_engine::get_equality(&tokens, &mut cache.session) {
             Ok(result) => result,
             Err(error) => {
                 Self::nonfatal_error_dialog(cursive, error);
@@ -266,7 +266,7 @@ impl Tui {
     ///
     /// **NOT PUBLIC.**
     ///
-    fn history_on_select(cursive: &mut Cursive, index: usize) {
+    fn history_on_submit(cursive: &mut Cursive, index: usize) {
         // Grab the cache
         let cache = match cursive.user_data::<TuiCache>() {
             Some(cache) => cache.clone(),
@@ -283,8 +283,7 @@ impl Tui {
         let mut curser_pos = cache.entry_bar_cursor_pos;
 
         // Get the selected history entry.
-        let entry = &cache.session.get_entries()[index]
-            .render_without_equality(&cache.session);
+        let entry = &cache.session.get_entries()[index].render_without_equality(&cache.session);
 
         // Insert the selected history entry into the entry bar at the cursor position.
         let left = &entry_bar_content[..curser_pos];
@@ -293,6 +292,51 @@ impl Tui {
         let entry_bar_content = format!("{}{}{}", left, entry, right);
 
         curser_pos += entry.len();
+
+        entry_bar.set_content(entry_bar_content);
+        entry_bar.set_cursor(curser_pos);
+
+        // Return focus to the entry bar.
+        layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
+    }
+
+    /// Handles the Ctrl+A key combo for getting the answer of the selected history entry
+    ///
+    /// **NOT PUBLIC**
+    ///
+    fn grab_answer(cursive: &mut Cursive) {
+        // Grab the cache
+        let cache = match cursive.user_data::<TuiCache>() {
+            Some(cache) => cache.clone(),
+            None => {
+                panic!("Failed to initialize Cursive instance with cache! this should not happen!");
+            }
+        };
+
+        let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
+        let history: ViewRef<SelectView<usize>> = cursive.find_name(TUI_HISTORY_ID).unwrap();
+        let mut layout: ViewRef<LinearLayout> = cursive.find_name(TUI_LAYOUT_ID).unwrap();
+
+        let entry_bar_content = entry_bar.get_content();
+
+        let mut curser_pos = cache.entry_bar_cursor_pos;
+
+        // Get the selected history entry.
+        let answer_inv_index = match history.selected_id() {
+            Some(index) => {
+                let inv_index_start = cache.session.get_entry_count() - 1;
+                format!("@{}", inv_index_start - index)
+            }
+            None => return,
+        };
+
+        // Insert the selected history entry into the entry bar at the cursor position.
+        let left = &entry_bar_content[..curser_pos];
+        let right = &entry_bar_content[curser_pos..];
+
+        let entry_bar_content = format!("{}{}{}", left, answer_inv_index, right);
+
+        curser_pos += answer_inv_index.len();
 
         entry_bar.set_content(entry_bar_content);
         entry_bar.set_cursor(curser_pos);
