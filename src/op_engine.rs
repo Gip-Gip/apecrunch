@@ -133,7 +133,7 @@ pub fn simplify(token: &Token, session: &mut Session) -> Result<Token, Box<dyn E
         Token::Answer(uuid) => {
             if let Some(entry) = session.get_entry_from_uuid(uuid) {
                 let entry = entry.clone();
-                return simplify(entry.without_equality(), session);
+                return simplify(entry.only_equality(), session);
             }
             bail!("Invalid entry uuid {}!", uuid);
         }

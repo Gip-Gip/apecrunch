@@ -39,7 +39,7 @@ use uuid::Uuid;
 
 /// Versions of history files that this version of apecrunch is compatible with
 ///
-pub const HISTORY_COMPAT_VERS: [&str; 2] = ["0.0.2", "0.0.3"];
+pub const HISTORY_COMPAT_VERS: [&str; 1] = ["0.0.3"];
 
 /// Individual history entry retaining it's UUID, parser tokens, and textual rendition.
 ///
@@ -72,11 +72,11 @@ impl HistoryEntry {
         self.rendition.clone()
     }
 
-    /// Gets the entry without the equality
+    /// Gets the entry with only the equality
     ///
-    pub fn without_equality(&self) -> &Token {
-        if let Token::Equality(left, _right) = &self.expression {
-            return left;
+    pub fn only_equality(&self) -> &Token {
+        if let Token::Equality(_left, right) = &self.expression {
+            return right;
         }
 
         &self.expression
