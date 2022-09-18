@@ -1,9 +1,9 @@
 [package]
 name = "apecrunch"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 license = "GPL-3.0-only"
-description = "A SpeedCrunch inspired TUI calculator, for apes..."
+description = "A SpeedCrunch inspired TUI calculator"
 keywords = ["SpeedCrunch", "calculator", "tui", "math", "cli"]
 catagories = ["command-line-utilities", "science", "mathematics"]
 repository = "https://github.com/Gip-Gip/apecrunch"
@@ -29,8 +29,16 @@ toml = "0.5.9"                                                                  
 uuid = { version = "1.1.2", features = ["v4" , "serde"] }                                                   # UUID generation
 
 [dev-dependencies]
-criterion = "0.3.6"
+criterion = { version = "0.3.6", features = ["html_reports"]}
 
 [[bench]]
 name = "sqrt"
+harness = false
+
+[[bench]]
+name = "parse"
+harness = false
+
+[[bench]]
+name = "op"
 harness = false

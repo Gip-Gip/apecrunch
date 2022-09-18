@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "apecrunch"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "bincode",
  "clap 3.2.21",
