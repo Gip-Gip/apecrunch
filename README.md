@@ -8,6 +8,9 @@
 
  - [ ] Add dedicated square root function
  - [ ] Add built in functions like sin, cos, tan, etc.
+ - [ ] Add line numbers
+ - [ ] Add copy+paste
+ - [ ] Test on other platforms, such as windows, bsd, etc.
  - [ ] Make README pretty
 
 ## **Changelog:**
