@@ -8,12 +8,14 @@
 
  - [ ] Add dedicated square root function
  - [ ] Add built in functions like sin, cos, tan, etc.
- - [ ] Add line numbers
  - [ ] Add copy+paste
  - [ ] Test on other platforms, such as windows, bsd, etc.
  - [ ] Make README pretty
 
 ## **Changelog:**
+
+### **Version 0.0.4** *in progress*
+ - [ ] **Added line/history entry numbers** *(commit eac4d3f)*
 
 ### **Version 0.0.3**
  - [X] **Added ability to retrieve answers with Ctrl+A** *(commit 44f0573)*
