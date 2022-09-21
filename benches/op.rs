@@ -10,16 +10,13 @@ pub fn op_benchmark(c: &mut Criterion) {
     let input2 = parse_str("((6.1--2.22)^2 + (-24-10.5)^2)^0.5", &mut session).unwrap();
 
     c.bench_function("get equality of '2+2'", |b: &mut Bencher| {
-        b.iter(|| {
-            get_equality(&input1, &mut session)
-        })
+        b.iter(|| get_equality(&input1, &mut session))
     });
 
-    c.bench_function("get equality of 'sqrt((6.1--2.22)^2 + (-24-10.5)^2)'", |b: &mut Bencher| {
-        b.iter(|| {
-            get_equality(&input2, &mut session)
-        })
-    });
+    c.bench_function(
+        "get equality of 'sqrt((6.1--2.22)^2 + (-24-10.5)^2)'",
+        |b: &mut Bencher| b.iter(|| get_equality(&input2, &mut session)),
+    );
 
     session._test_purge().unwrap();
 }

@@ -20,9 +20,12 @@
 
 use crate::session::HistoryEntry;
 use crate::session::Session;
+use cursive::utils::span::SpannedString;
 use cursive::view::Nameable;
 use cursive::view::Selector;
 use cursive::views::LinearLayout;
+use cursive::views::ListView;
+use cursive::views::TextView;
 use cursive::views::ViewRef;
 use cursive::View;
 use std::error::Error;
@@ -45,6 +48,8 @@ use crate::op_engine;
 use crate::parser;
 use cursive::align::HAlign;
 use cursive::align::VAlign;
+
+use cursive::utils::markup::markdown;
 
 // Constants!
 
@@ -135,13 +140,24 @@ impl Tui {
         // History view configuration!
         //
 
+        let entries = cache.session.get_entries();
+        let history_depth = cache.session.history_depth as usize;
+
         let mut history_list = SelectView::new()
             .on_submit(|cursive, index| Self::history_on_submit(cursive, *index))
             .h_align(HAlign::Left)
             .v_align(VAlign::Top);
 
-        for (i, entry) in cache.session.get_entries().iter().enumerate() {
-            history_list.add_item(&entry.to_string(), i); // Store everything in an inverse index
+        let digit_count = ((history_depth as f64).log10() as usize) + 1;
+
+        for (i, entry) in entries.iter().enumerate() {
+            let inv_index = entries.len() - i - 1;
+            let mut entry_str = SpannedString::styled(
+                format!("{num:0>dc$}:", num = inv_index, dc = digit_count),
+                ColorStyle::tertiary(),
+            );
+            entry_str.append_plain(entry.to_string());
+            history_list.add_item(entry_str, i);
         }
 
         // Set the selection to the bottom element, if there are any elements in the list
