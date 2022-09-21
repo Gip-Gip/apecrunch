@@ -20,11 +20,9 @@
 
 use crate::session::HistoryEntry;
 use crate::session::Session;
-use cursive::utils::span::SpannedString;
 use cursive::view::Nameable;
 use cursive::view::Selector;
 use cursive::views::LinearLayout;
-use cursive::views::ListView;
 use cursive::views::TextView;
 use cursive::views::ViewRef;
 use cursive::View;
@@ -49,8 +47,6 @@ use crate::parser;
 use cursive::align::HAlign;
 use cursive::align::VAlign;
 
-use cursive::utils::markup::markdown;
-
 // Constants!
 
 /// Height of the entry bar.
@@ -60,6 +56,8 @@ const TUI_ENTRYBAR_HEIGHT: usize = 1;
 const TUI_ENTRYBAR_ID: &str = "entry_bar";
 /// ID of the history view.
 const TUI_HISTORY_ID: &str = "history";
+/// ID of the history line numbers
+const TUI_HISTORY_NUM_ID: &str = "histnum";
 /// ID of the layout view.
 const TUI_LAYOUT_ID: &str = "layout";
 
@@ -150,14 +148,13 @@ impl Tui {
 
         let digit_count = ((history_depth as f64).log10() as usize) + 1;
 
+        let mut history_nums_str = String::new();
+
         for (i, entry) in entries.iter().enumerate() {
             let inv_index = entries.len() - i - 1;
-            let mut entry_str = SpannedString::styled(
-                format!("{num:0>dc$}:", num = inv_index, dc = digit_count),
-                ColorStyle::tertiary(),
-            );
-            entry_str.append_plain(entry.to_string());
-            history_list.add_item(entry_str, i);
+            history_nums_str
+                .push_str(format!("{num:0>dc$}: \n", num = inv_index, dc = digit_count).as_str());
+            history_list.add_item(entry.to_string(), i);
         }
 
         // Set the selection to the bottom element, if there are any elements in the list
@@ -165,7 +162,13 @@ impl Tui {
             history_list.set_selection(history_list.len() - 1); // Ignore the callback, we don't need to do anything...
         }
 
-        let mut history_scroll = ScrollView::new(history_list.with_name(TUI_HISTORY_ID));
+        let history_nums = TextView::new(history_nums_str).style(ColorStyle::tertiary());
+
+        let history_layout = LinearLayout::horizontal()
+            .child(history_nums.with_name(TUI_HISTORY_NUM_ID))
+            .child(history_list.with_name(TUI_HISTORY_ID));
+
+        let mut history_scroll = ScrollView::new(history_layout);
 
         history_scroll.scroll_to_important_area();
 
@@ -234,8 +237,7 @@ impl Tui {
 
         let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
         let mut history: ViewRef<SelectView<usize>> = cursive.find_name(TUI_HISTORY_ID).unwrap();
-
-        eprint!("{}", &cache.session.decimal_places);
+        let mut history_nums: ViewRef<TextView> = cursive.find_name(TUI_HISTORY_NUM_ID).unwrap();
 
         // Add the current entry bar contents to the history cache and clear the entry bar.
         //
@@ -263,6 +265,16 @@ impl Tui {
 
         cache.session.add_entry(&entry);
         history.add_item(entry.to_string(), index);
+
+        let digit_count = ((cache.session.history_depth as f64).log10() as usize) + 1;
+        let max_num = index;
+        let history_nums_str_old = history_nums.get_content().source().to_owned();
+        let mut history_nums_str: String =
+            format!("{num:0>dc$}: \n", num = max_num, dc = digit_count);
+
+        history_nums_str.push_str(history_nums_str_old.as_str());
+
+        history_nums.set_content(history_nums_str);
 
         if let Result::Err(error) = cache.session.update_file() {
             Self::nonfatal_error_dialog(cursive, error);

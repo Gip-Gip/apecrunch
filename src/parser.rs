@@ -132,9 +132,12 @@ pub fn parse_str(string: &str, session: &mut Session) -> Result<Token, Box<dyn E
     // Regex definitions n stuff
     lazy_static! {
         static ref NEGATIVE_RE: Regex = Regex::new(r"(?P<a>^|[(=\-\+/\*\^])(?P<b>-)").unwrap(); // Used to see if there are negative numbers in the string
+        static ref COMMENT_RE: Regex = Regex::new(r"#.*").unwrap();
     }
 
     let mut cleaned_string: String = string.chars().filter(|c| !c.is_whitespace()).collect();
+
+    cleaned_string = COMMENT_RE.replace_all(&cleaned_string, "").to_string();
 
     if cleaned_string.len() == 0 {
         bail!("Empty Expression!");

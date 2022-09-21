@@ -39,7 +39,7 @@ use uuid::Uuid;
 
 /// Versions of history files that this version of apecrunch is compatible with
 ///
-pub const HISTORY_COMPAT_VERS: [&str; 1] = ["0.0.3"];
+pub const HISTORY_COMPAT_VERS: [&str; 2] = ["0.0.3", "0.0.4"];
 
 /// Individual history entry retaining it's UUID, parser tokens, and textual rendition.
 ///
@@ -675,8 +675,6 @@ mod tests {
         let history_entry_2_inv_index = session
             .get_inv_index_from_uuid(&history_entry.entry_uuid)
             .unwrap();
-
-        eprintln!("index = {}", history_entry_2_inv_index);
 
         let history_entry_2 = session
             .get_entry_inv_index(history_entry_2_inv_index)
