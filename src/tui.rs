@@ -118,8 +118,13 @@ impl Tui {
         self.cursive
             .set_on_pre_event(Event::Key(Key::Esc), |cursive| cursive.quit());
 
+        // Bind the 'a' key to grabbing the answer of the selected entry
         self.cursive
             .set_on_post_event(Event::Char('a'), |cursive| Self::grab_answer(cursive));
+
+        // Bind the 'e' key to focus on the entry bar
+        self.cursive
+            .set_on_post_event(Event::Char('e'), |cursive| Self::focus_entry_bar(cursive));
     }
 
     /// Lay out all of the views.
@@ -304,7 +309,6 @@ impl Tui {
         };
 
         let mut entry_bar: ViewRef<EditView> = cursive.find_name(TUI_ENTRYBAR_ID).unwrap();
-        let mut layout: ViewRef<LinearLayout> = cursive.find_name(TUI_LAYOUT_ID).unwrap();
 
         let entry_bar_content = entry_bar.get_content();
 
@@ -325,7 +329,7 @@ impl Tui {
         entry_bar.set_cursor(curser_pos);
 
         // Return focus to the entry bar.
-        layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
+        Self::focus_entry_bar(cursive);
     }
 
     /// Handles the Ctrl+A key combo for getting the answer of the selected history entry
@@ -370,6 +374,15 @@ impl Tui {
         entry_bar.set_cursor(curser_pos);
 
         // Return focus to the entry bar.
+        layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
+    }
+
+    /// Focus on the entry bar
+    ///
+    /// **NOT PUBLIC**
+    fn focus_entry_bar(cursive: &mut Cursive) {
+        let mut layout: ViewRef<LinearLayout> = cursive.find_name(TUI_LAYOUT_ID).unwrap();
+
         layout.focus_view(&Selector::Name(TUI_ENTRYBAR_ID)).unwrap();
     }
 

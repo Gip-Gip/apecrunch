@@ -16,6 +16,7 @@
 
 ### **Version 0.0.4** *in progress*
  - [ ] **Added line/history entry numbers** *(commit eac4d3f)*
+ - [ ] **Changed grab answer keybinding to 'a' instead of 'ctrl+a'** *(commit 6f59d18)*
 
 ### **Version 0.0.3**
  - [X] **Added ability to retrieve answers with Ctrl+A** *(commit 44f0573)*
