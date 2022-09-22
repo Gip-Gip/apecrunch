@@ -119,7 +119,7 @@ impl Tui {
             .set_on_pre_event(Event::Key(Key::Esc), |cursive| cursive.quit());
 
         self.cursive
-            .set_on_pre_event(Event::CtrlChar('a'), |cursive| Self::grab_answer(cursive));
+            .set_on_post_event(Event::Char('a'), |cursive| Self::grab_answer(cursive));
     }
 
     /// Lay out all of the views.
