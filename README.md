@@ -15,23 +15,24 @@
 ## **Changelog:**
 
 ### **Version 0.0.4** *in progress*
- - [ ] **Added line/history entry numbers** *(commit eac4d3f)*
- - [ ] **Changed grab answer keybinding to 'a' instead of 'ctrl+a'** *(commit 6f59d18)*
+ - [x] **Added line/history entry numbers** *(commit eac4d3f)*
+ - [x] **Added keybind to focus on entry bar by pressing 'e'** *(commit c589208)*
+ - [x] **Changed grab answer keybinding to 'a' instead of 'ctrl+a'** *(commit 6f59d18)*
 
 ### **Version 0.0.3**
- - [X] **Added ability to retrieve answers with Ctrl+A** *(commit 44f0573)*
- - [X] **Fixed bug where inserting a previous history entry would cause a panic** *(commit 5a0152e)*
- - [X] **Fixed history list so it starts with the last computation selected** *(commit 4f32da1)*
+ - [x] **Added ability to retrieve answers with Ctrl+A** *(commit 44f0573)*
+ - [x] **Fixed bug where inserting a previous history entry would cause a panic** *(commit 5a0152e)*
+ - [x] **Fixed history list so it starts with the last computation selected** *(commit 4f32da1)*
 
 ### **Version 0.0.2**
-- [X] **Added good roots** *(commits 204f105/032b169/c98ee95/0298679/c980033)*
-- [X] **Added variables** *(commits 2bf6780/337064e)*
-    - [X] **Added automatic storing of variables to history files** *(commit 52e7c70)*
-    - [X] **Added variable name checking** *(commit 4170b3e)*
-- [X] **Added history file version check** *(commit 8ab539d)*
-- [X] **Improved the code that postfixes three dots to numbers if there is a loss of precision converting the number to a string** *(commit c9e1613)*
-- [X] **Fixed crash when reading corrupt/incompatible history files** *(commit 8ab539d)*
-- [X] **Fixed order of operation** *(commit 2e31175)*
+- [x] **Added good roots** *(commits 204f105/032b169/c98ee95/0298679/c980033)*
+- [x] **Added variables** *(commits 2bf6780/337064e)*
+    - [x] **Added automatic storing of variables to history files** *(commit 52e7c70)*
+    - [x] **Added variable name checking** *(commit 4170b3e)*
+- [x] **Added history file version check** *(commit 8ab539d)*
+- [x] **Improved the code that postfixes three dots to numbers if there is a loss of precision converting the number to a string** *(commit c9e1613)*
+- [x] **Fixed crash when reading corrupt/incompatible history files** *(commit 8ab539d)*
+- [x] **Fixed order of operation** *(commit 2e31175)*
 
 ### **Version 0.0.1**
 

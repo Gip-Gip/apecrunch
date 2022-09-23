@@ -24,6 +24,7 @@ pub mod parser;
 pub mod session;
 pub mod tui;
 pub mod variable;
+//pub mod functions;
 
 /// Version of apecrunch, derived from the Cargo.toml version.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

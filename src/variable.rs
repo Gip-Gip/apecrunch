@@ -73,29 +73,29 @@ impl VarTable {
     /// Add a variable to the VarTable, fail if the variable exists
     ///
     pub fn add(&mut self, var: Variable) -> Result<(), Box<dyn Error>> {
-        if self.variables.iter().find(|&i| i.id == var.id) == None {
-            self.variables.push(var);
-            Ok(())
-        } else {
-            bail!("Variable \"{}\" already found!", var.id);
+        match self.variables.binary_search_by(|i| i.id.cmp(&var.id)) {
+            Ok(_) => {
+                bail!("Variable \"{}\" already found!", var.id);
+            }
+            Err(i) => {
+                self.variables.insert(i, var);
+            }
         }
+
+        Ok(())
     }
 
     /// Remove a variable from the VarTable given just the id, fail if the variable doesn't exist
     ///
     pub fn remove(&mut self, id: &str) -> Result<(), Box<dyn Error>> {
-        let new_variables: Vec<Variable> = self
-            .variables
-            .clone()
-            .into_iter()
-            .filter(|i| i.id != id)
-            .collect();
-
-        if new_variables.len() == self.variables.len() {
-            bail!("Variable \"{}\" not found!", id);
+        match self.variables.binary_search_by(|i| i.id.as_str().cmp(&id)) {
+            Ok(i) => {
+                self.variables.remove(i);
+            }
+            Err(_) => {
+                bail!("Variable \"{}\" not found!", id);
+            }
         }
-
-        self.variables = new_variables;
 
         Ok(())
     }
@@ -103,25 +103,25 @@ impl VarTable {
     /// Store a variable to the VarTable, replacing a variable if it exists with the updated value
     ///
     pub fn store(&mut self, var: Variable) -> Result<(), Box<dyn Error>> {
-        let new_variables: Vec<Variable> = self
-            .variables
-            .clone()
-            .into_iter()
-            .filter(|i| i.id != var.id)
-            .collect();
+        match self.variables.binary_search_by(|i| i.id.cmp(&var.id)) {
+            Ok(i) => {
+                self.variables[i] = var.clone(); // If the variable exists replace it with the new variable
+            }
+            Err(i) => {
+                self.variables.insert(i, var); // Otherwise insert it
+            }
+        }
 
-        self.variables = new_variables;
-
-        self.add(var)
+        Ok(())
     }
 
     /// Get a variable from the VarTable given just the id
     ///
     pub fn get(&mut self, id: &str) -> Result<Variable, Box<dyn Error>> {
-        match self.variables.iter().find(|&i| i.id == id) {
-            Some(var) => Ok(var.clone()),
-            None => {
-                bail!("Variable \"{}\" not found!", id)
+        match self.variables.binary_search_by(|i| i.id.as_str().cmp(&id)) {
+            Ok(i) => Ok(self.variables.get(i).unwrap().clone()),
+            Err(_) => {
+                bail!("Variable \"{}\" not found!", id);
             }
         }
     }
@@ -158,6 +158,14 @@ mod tests {
 
         // Store the variable, should overwrite the existing variable
         vartable.store(var2.clone()).unwrap();
+
+        // Make sure there are no duplicates
+
+        let mut vartable2 = vartable.clone();
+
+        vartable2.variables.dedup();
+
+        assert_eq!(vartable, vartable2);
 
         // Retrieve it
         let var3 = vartable.get("x").unwrap();
